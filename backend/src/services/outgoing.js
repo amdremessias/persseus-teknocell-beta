@@ -51,14 +51,17 @@ export async function sendTextMessage({ to, text, canal = "whatsapp" }) {
 }
 
 // Envia texto pelo canal do ticket — para leads não-WhatsApp (Instagram, etc.)
+// Retorna { success, externalMessageId }. IMPORTANTE: o hub-message não devolve
+// wid, então externalMessageId vem null — NUNCA um placeholder como 'sent', que
+// colidiria na constraint única de external_message_id e derrubaria o envio.
 export async function sendTextViaTicket({ ticketId, text }) {
   console.log(`[outgoing] enviando texto via ticket ${ticketId}`);
   try {
     const result = await mercadophoneSendTextViaTicket({ ticketId, text });
-    return result.externalMessageId || 'sent';
+    return { success: true, externalMessageId: result.externalMessageId || null };
   } catch (err) {
     console.error("[outgoing] sendTextViaTicket error:", err.message);
-    return null;
+    return { success: false, externalMessageId: null };
   }
 }
 

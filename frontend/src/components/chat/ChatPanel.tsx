@@ -94,6 +94,7 @@ export default function ChatPanel({ leadId, onBack }: Props) {
   const [templateVars, setTemplateVars] = useState<Record<string, string>>({});
   const [sendingTemplate, setSendingTemplate] = useState(false);
   const [windowExpiredError, setWindowExpiredError] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
@@ -275,6 +276,7 @@ export default function ChatPanel({ leadId, onBack }: Props) {
     if (sending) return;
     if (!attachment && !text.trim()) return;
     setSending(true);
+    setSendError(null);
     try {
       if (attachment) {
         const form = new FormData();
@@ -289,11 +291,14 @@ export default function ChatPanel({ leadId, onBack }: Props) {
         const { data } = await api.post<{ deliveryStatus?: string }>(`/leads/${leadId}/messages`, { texto: text.trim() });
         setText("");
         if (data?.deliveryStatus === "failed") {
-          setWindowExpiredError(true);
+          // WhatsApp fora da janela → oferece template; demais canais → aviso genérico
+          if (isInstagram) setSendError("Mensagem não entregue. O cliente pode estar fora da janela de 24h.");
+          else setWindowExpiredError(true);
         }
       }
     } catch {
-      // Network/server error — silently ignore
+      // Falha de rede/servidor — mostra aviso, não engole o erro
+      setSendError("Não foi possível enviar a mensagem. Verifique a conexão e tente novamente.");
     } finally {
       setSending(false);
     }
@@ -438,6 +443,7 @@ export default function ChatPanel({ leadId, onBack }: Props) {
     const v = e.target.value;
     setText(v);
     setShowQuickReplies(v.startsWith("/"));
+    if (sendError) setSendError(null);
   }
 
   function applyQuickReply(replacement: string) {
@@ -710,6 +716,22 @@ export default function ChatPanel({ leadId, onBack }: Props) {
           </div>
 
           <SuggestedReplies leadId={leadId} onSelect={(t) => setText(t)} />
+
+          {/* Erro de envio — não engolir silenciosamente */}
+          {sendError && (
+            <div className="mx-3 mb-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <AlertTriangle size={14} className="text-red-500 shrink-0" />
+                <span className="text-xs text-red-700">{sendError}</span>
+              </div>
+              <button
+                onClick={() => setSendError(null)}
+                className="shrink-0 text-xs text-red-500 hover:text-red-700 font-medium"
+              >
+                Fechar
+              </button>
+            </div>
+          )}
 
           {/* 24h window banner — Instagram não tem template: só avisa pra aguardar o cliente */}
           {(!within24h || windowExpiredError) && isInstagram && (

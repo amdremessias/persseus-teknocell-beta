@@ -183,13 +183,16 @@ export default async function leadRoutes(fastify) {
     let deliveryStatus = null;
     if (isOutbound) {
       if (isNonWhatsApp) {
-        extId = await sendTextViaTicket({ ticketId: lead.mercadophoneTicketUuid, text: textoEnvio })
-          .catch(err => { console.error("[leads:messages] sendTextViaTicket error:", err.message); return null; });
+        // Ticket (Instagram etc.): sucesso não vem com wid — usa success flag,
+        // e extId fica null (não gravar placeholder no external_message_id único).
+        const r = await sendTextViaTicket({ ticketId: lead.mercadophoneTicketUuid, text: textoEnvio });
+        extId = r.externalMessageId;
+        deliveryStatus = r.success ? "sent" : "failed";
       } else {
         extId = await sendTextMessage({ to: lead.telefone, text: textoEnvio, canal: lead.canalMensagem || "whatsapp" })
           .catch(err => { console.error("[leads:messages] sendTextMessage error:", err.message); return null; });
+        deliveryStatus = extId ? "sent" : "failed";
       }
-      deliveryStatus = extId ? "sent" : "failed";
     }
 
     const msg = await prisma.message.create({
