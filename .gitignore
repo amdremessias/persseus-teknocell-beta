@@ -18,3 +18,9 @@ npm-debug.log*
 
 # OS
 .DS_Store
+
+# Dados de vendas retroativas — PII de clientes (nomes/telefones), não versionar
+docs/*.csv
+docs/*.xlsx
+docs/*.pdf
+docs/*.txt
