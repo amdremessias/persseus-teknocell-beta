@@ -1,0 +1,158 @@
+{
+    "id": "T9cEBukg2SioL3kw",
+    "name": "BIA_CRM_FULL_handoff",
+    "active": true,
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "bia-handoff",
+                "authentication": "headerAuth",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "66f0fc8d-c432-4fa5-8e05-5ba2979f7fe2",
+            "name": "webhook_handoff",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                0,
+                0
+            ],
+            "webhookId": "456d0052-bce9-462a-b543-ef6201cb5b4e",
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "JUbUR8EugZySbckF",
+                    "name": "Header Auth account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={ \"ok\": true, \"handoff\": \"queued\" }",
+                "options": {
+                    "responseCode": 200
+                }
+            },
+            "id": "cc125bcd-80fe-45c3-8e80-781b7a9c1cb8",
+            "name": "responder_200",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                0,
+                176
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Atendente de assistencia (desvio fixo)\nconst ASSIST_AGENTE_ID = 'cmpy2xf9d00yt14nyuv5yyk7n';\nconst ASSIST_AGENTE_NOME = 'Diego';\nconst resp = $input.item.json ?? {};\nconst ag = resp.agente ?? resp.agent ?? resp.data ?? resp;\nlet agente_id = ag.id ?? ag.agente_id ?? ag.userId ?? null;\nlet agente_nome = ag.nome ?? ag.name ?? ag.agente_nome ?? null;\n\n// auto-assign DESLIGADO \u2014 handoff cai sem dono, atendente pega manual\nagente_id = null;\nagente_nome = null;\n\nconst wb = $('webhook_handoff').item.json.body ?? $('webhook_handoff').item.json;\nconst metadata = wb.metadata ?? {};\nconst txt = [metadata.intencao, metadata.resumo, wb.handoff_reason]\n  .filter(Boolean).join(' ').toLowerCase();\nconst ASSIST_KW = ['assist','conserto','reparo','quebr','trinc','molh',\n  'nao liga','n\u00e3o liga','nao carrega','n\u00e3o carrega','troca de tela','tela quebrada','display'];\nconst is_assistencia = ASSIST_KW.some(k => txt.includes(k));\n// desvio do Diego desligado \u2014 assistencia tambem cai sem dono\n// if (is_assistencia) {\n//   agente_id = ASSIST_AGENTE_ID;\n//   agente_nome = ASSIST_AGENTE_NOME;\n// }\n\nreturn {\n  json: {\n    lead_id: wb.lead_id,\n    lead_nome: wb.lead_nome ?? null,\n    lead_telefone: wb.lead_telefone ?? null,\n    handoff_reason: wb.handoff_reason ?? 'lead_quente',\n    metadata,\n    agente_id,\n    agente_nome,\n    is_assistencia,\n    timestamp: new Date().toISOString()\n  }\n};"
+            },
+            "id": "944251ba-4794-49aa-99cf-0df3f89f86a5",
+            "name": "selecionar_agente",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                528,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://crm.teknoscel.shop/api/webhooks/handoff-notify",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ lead_id: $json.lead_id, lead_nome: $json.lead_nome, lead_telefone: $json.lead_telefone, handoff_reason: $json.handoff_reason, metadata: $json.metadata, agente_id: $json.agente_id, agente_nome: $json.agente_nome, timestamp: $json.timestamp }) }}",
+                "options": {
+                    "timeout": 8000
+                }
+            },
+            "id": "ab06f2cb-68c3-40e6-82fd-925ea3e0ff32",
+            "name": "notificar_agente",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                784,
+                0
+            ],
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "JUbUR8EugZySbckF",
+                    "name": "Header Auth account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "url": "https://crm.teknoscel.shop/api/queue/next-available-agent",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "options": {
+                    "timeout": 8000
+                }
+            },
+            "id": "3311c5b8-fd94-48d9-b90c-36a9db8a0954",
+            "name": "escolher_agente",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                256,
+                0
+            ],
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "JUbUR8EugZySbckF",
+                    "name": "Header Auth account"
+                }
+            },
+            "onError": "continueRegularOutput"
+        }
+    ],
+    "connections": {
+        "webhook_handoff": {
+            "main": [
+                [
+                    {
+                        "node": "responder_200",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "escolher_agente",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "escolher_agente": {
+            "main": [
+                [
+                    {
+                        "node": "selecionar_agente",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "selecionar_agente": {
+            "main": [
+                [
+                    {
+                        "node": "notificar_agente",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "binaryMode": "separate"
+    }
+}

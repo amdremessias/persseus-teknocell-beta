@@ -1,0 +1,913 @@
+{
+    "id": "BZfUPFUa4zubUxn0",
+    "name": "BIA_CRM_FULL_core (com audio)",
+    "active": true,
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "bia-teknos",
+                "authentication": "headerAuth",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "aafb9b91-0d07-45d8-939e-894b68b9feed",
+            "name": "webhook_entrada",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                -2224,
+                288
+            ],
+            "webhookId": "bc4f6eb8-38cd-4aa9-8163-e63838830015",
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "JUbUR8EugZySbckF",
+                    "name": "Header Auth account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={ \"ok\": true }",
+                "options": {
+                    "responseCode": 200
+                }
+            },
+            "id": "42d3bdff-5de7-42bc-a58d-b0b8f8852829",
+            "name": "responder_200",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                -2000,
+                384
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const raw = $input.item.json.body ?? $input.item.json;\n\n// --- AUDIO: m\u00eddia vinda do CRM ---\nconst mediaType = raw.mediaType ?? null;\nconst mediaUrl = raw.mediaUrl ?? null;\n\nconst origemMap = {\n  whatsapp: 'whatsapp',\n  lovable: 'lovable',\n  instagram: 'instagram_futuro',\n  loja: 'atendimento_loja'\n};\nconst origem_lead = origemMap[raw.canal] ?? 'whatsapp';\n\nconst history = (raw.contexto ?? [])\n  .filter(m => m.tipo !== 'interno')\n  .slice(-10)\n  .map(m => ({\n    role: m.tipo === 'cliente' ? 'cliente' : m.tipo === 'bia' ? 'bia' : 'atendente',\n    text: m.texto,\n    at: m.criadoEm\n  }));\n\nconst is_first_contact = history.filter(m => m.role === 'cliente').length <= 1;\n\nlet pre_qualified = { uso_principal: null, orcamento: null, estado: null, prioridade: null };\nif (origem_lead === 'lovable') {\n  try {\n    const pq = JSON.parse(raw.mensagemCliente);\n    pre_qualified = {\n      uso_principal: pq.uso_principal ?? null,\n      orcamento: pq.orcamento ?? null,\n      estado: pq.estado ?? null,\n      prioridade: pq.prioridade ?? null\n    };\n  } catch (_) {}\n}\n\nreturn {\n  json: {\n    lead_id: raw.leadId,\n    lead_nome: raw.leadNome ?? null,\n    origem_lead,\n    current_message: mediaType === 'audio' ? '' : (raw.mensagemCliente ?? ''),\n    mediaType,\n    mediaUrl,\n    resumo: raw.resumo ?? null,\n    is_first_contact,\n    history,\n    pre_qualified\n  }\n};"
+            },
+            "id": "7ed3a209-4bf5-4d20-ae69-8fc1ec5e4d77",
+            "name": "normalizar_entrada",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -2000,
+                192
+            ]
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 1
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "cond-lovable",
+                                        "leftValue": "={{ $json.origem_lead }}",
+                                        "rightValue": "lovable",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals",
+                                            "name": "filter.operator.equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "lovable"
+                        }
+                    ]
+                },
+                "options": {
+                    "fallbackOutput": "extra",
+                    "renameFallbackOutput": "whatsapp"
+                }
+            },
+            "id": "fe0986b9-5f83-4a95-b26b-d6fb2a84a698",
+            "name": "identificar_origem",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3,
+            "position": [
+                -656,
+                192
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// ============================================================\n// FIX A \u2014 preparar_prompt (injeta data/hora/dia da semana)\n// ============================================================\n// SUBSTITUIR o c\u00f3digo atual do n\u00f3 `preparar_prompt` por este.\n\nconst item = $input.item.json;\n\n// ===== Data/hora atual em timezone Brasil =====\nconst agora = new Date();\n// Ajusta pra timezone S\u00e3o Paulo (UTC-3)\nconst tzOffset = -3;\nconst agoraBR = new Date(agora.getTime() + (tzOffset * 60 - agora.getTimezoneOffset()) * 60000);\n\nconst diasSemana = ['domingo','segunda','terca','quarta','quinta','sexta','sabado'];\nconst diaSemana = diasSemana[agoraBR.getDay()];\nconst dataFmt = agoraBR.toISOString().slice(0,10); // 2026-05-24\nconst horaFmt = agoraBR.toTimeString().slice(0,5); // 09:19\n\n// ===== Status da loja agora =====\nlet statusLoja;\nif (diaSemana === 'domingo') {\n  statusLoja = 'FECHADA (domingo)';\n} else if (diaSemana === 'sabado') {\n  const h = agoraBR.getHours();\n  statusLoja = (h >= 9 && h < 17) ? 'ABERTA (s\u00e1bado 9h-17h)' : 'FECHADA (fora do hor\u00e1rio de s\u00e1bado)';\n} else {\n  const h = agoraBR.getHours();\n  statusLoja = (h >= 9 && h < 18) ? 'ABERTA (seg-sex 9h-18h)' : 'FECHADA (fora do hor\u00e1rio comercial)';\n}\n\n// ===== Hist\u00f3rico (\u00faltimas 10, filtrando \"v\u00edcios lingu\u00edsticos\") =====\nconst VICIOS = ['me chama no privado', 'chama no privado', 'me chama no particular'];\n\nlet hist = '(sem hist\u00f3rico)';\nif (Array.isArray(item.history) && item.history.length) {\n  const ultimas = item.history\n    .slice(-10)\n    .filter(m => {\n      if (m.role !== 'bia') return true;\n      // descarta msgs da Bia com v\u00edcios lingu\u00edsticos antigos\n      const t = (m.text || '').toLowerCase();\n      return !VICIOS.some(v => t.includes(v));\n    });\n  \n  hist = ultimas.map(m => `[${m.role}]: ${m.text}`).join('\\n');\n}\n\n// ===== Pr\u00e9-qualifica\u00e7\u00e3o (lovable) =====\nlet pqLines = '(n\u00e3o aplic\u00e1vel)';\nif (item.pre_qualified && Object.keys(item.pre_qualified).length) {\n  pqLines = Object.entries(item.pre_qualified)\n    .map(([k,v]) => `- ${k}: ${v}`)\n    .join('\\n');\n}\n\n// ===== Montagem do prompt =====\nconst prompt = [\n  `DATA ATUAL: ${dataFmt} (${diaSemana})`,\n  `HOR\u00c1RIO ATUAL: ${horaFmt}`,\n  `STATUS DA LOJA AGORA: ${statusLoja}`,\n  '',\n  `ORIGEM: ${item.origem_lead ?? 'whatsapp'}`,\n  `LEAD: ${item.lead_nome ?? 'n\u00e3o identificado'}`,\n  `PRIMEIRO CONTATO: ${item.is_first_contact ? 'sim' : 'n\u00e3o'}`,\n  `RESUMO ANTERIOR: ${item.resumo ?? 'nenhum'}`,\n  '',\n  'HIST\u00d3RICO (\u00faltimas 10 msgs, filtrado):',\n  hist,\n  '',\n  'PR\u00c9-QUALIFICA\u00c7\u00c3O:',\n  pqLines,\n  '',\n  'MENSAGEM ATUAL DO CLIENTE:',\n  item.current_message\n].join('\\n');\n\nreturn {\n  json: {\n    ...item,\n    prompt,\n    data_atual: dataFmt,\n    dia_semana: diaSemana,\n    hora_atual: horaFmt,\n    status_loja: statusLoja\n  }\n};"
+            },
+            "id": "20e64e11-d21e-4a77-b778-510778156d4c",
+            "name": "preparar_prompt",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -432,
+                192
+            ]
+        },
+        {
+            "parameters": {
+                "model": "gpt-5.4",
+                "options": {
+                    "maxTokens": 1024,
+                    "temperature": 0.2
+                }
+            },
+            "id": "5a7ad44c-ab5a-4ed2-82cf-ab96b3221055",
+            "name": "openai_model",
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+            "typeVersion": 1.1,
+            "position": [
+                -208,
+                416
+            ],
+            "credentials": {
+                "openAiApi": {
+                    "id": "MC7APsjpWhnuOdKF",
+                    "name": "OpenAI account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsonSchemaExample": "{\"intencao\":\"seminovo\",\"complexidade\":\"simples\",\"lead_score\":7,\"urgencia\":\"media\",\"humano\":false,\"estado_atendimento\":\"qualificando\",\"resumo\":\"Cliente busca iPhone 13 seminovo at\u00e9 R$2500\",\"response_text\":\"Trabalhamos com iPhones seminovos revisados, todos com garantia de 6 meses da loja e kit de prote\u00e7\u00e3o incluso! Para te indicar a melhor op\u00e7\u00e3o, qual \u00e9 o seu or\u00e7amento?\"}"
+            },
+            "id": "150da0ec-bc20-4893-87f0-ce67d5cb1543",
+            "name": "structured_parser",
+            "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+            "typeVersion": 1.2,
+            "position": [
+                560,
+                416
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const raw = $input.item.json;\nconst classificacao = raw.output ?? raw;\nconst normalizado = $('normalizar_entrada').item.json;\n\n// status da loja (vem do preparar_prompt)\nconst promptCtx = $('preparar_prompt').item.json || {};\nconst status_loja = promptCtx.status_loja || '';\nconst lojaFechada = String(status_loja).includes('FECHADA');\n\nconst blacklist = [\n  'em estoque', 'temos dispon\u00edvel', 'tenho aqui',\n  'sa\u00fade da bateria', 'bateria est\u00e1', 'capacidade da bateria',\n  'promo\u00e7\u00e3o especial', 'condi\u00e7\u00e3o especial',\n  'reservado', 'posso reservar', 'vou reservar',\n  'garanto', 'confirmo disponibilidade',\n  // reforcos contra promessa de estoque/preco\n  '\u00faltima unidade', 'entrega hoje', 'frete gr\u00e1tis',\n  'consigo por', 'fa\u00e7o por', 'melhor pre\u00e7o da cidade'\n];\n\nlet response_text = classificacao.output ?? classificacao.response_text ?? 'Nosso time de vendas pode te ajudar! Posso conectar voc\u00ea agora?';\nlet humano = classificacao.humano ?? false;\nlet handoff_reason = null;\n\nconst lower = (response_text || '').toLowerCase();\nif (blacklist.some(kw => lower.includes(kw))) {\n  response_text = 'Vou te passar pra um atendente que confirma isso certinho pra voc\u00ea, s\u00f3 um instante \ud83d\ude4f';\n  humano = true;\n  handoff_reason = 'violation_blacklist';\n}\n\n// MODO SILENCIOSO real: nao envia mensagem vazia\nconst estado = classificacao.estado_atendimento ?? 'qualificando';\nconst should_send = classificacao.should_send ?? true;\nconst isSilencioso = (estado === 'silencioso') || (should_send === false) || !String(response_text || '').trim();\n\n// FORA DO HORARIO: nao faz handoff (nao tem atendente). Bia segue atendendo.\nif (lojaFechada) {\n  humano = false;\n  handoff_reason = null;\n}\n\nif (humano && !handoff_reason) handoff_reason = 'ai_decision';\n\nreturn {\n  json: {\n    crm_payload: {\n      lead_id: normalizado.lead_id,\n      respostas: isSilencioso ? [] : [{ texto: response_text, mediaUrl: null }],\n      metadata: {\n        intencao: classificacao.intencao ?? 'outro',\n        complexidade: classificacao.complexidade ?? 'simples',\n        lead_score: classificacao.lead_score ?? 0,\n        urgencia: classificacao.urgencia ?? 'baixa',\n        estado_atendimento: estado,\n        origem_lead: normalizado.origem_lead,\n        resumo: classificacao.resumo ?? null,\n        humano: humano,\n        handoff_reason: handoff_reason,\n        status_loja: status_loja\n      }\n    }\n  }\n};\n"
+            },
+            "id": "2ed369c3-c940-4fff-a0ed-135e06e49df5",
+            "name": "resposta_bia",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                768,
+                192
+            ],
+            "onError": "continueRegularOutput"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://crm.teknoscel.shop/api/webhooks/bia-response",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "lead_id",
+                            "value": "={{$json.crm_payload.lead_id}}"
+                        },
+                        {
+                            "name": "respostas",
+                            "value": "={{ $json.crm_payload.respostas }}"
+                        },
+                        {
+                            "name": "metadata",
+                            "value": "={{ $json.crm_payload.metadata }}"
+                        }
+                    ]
+                },
+                "options": {
+                    "response": {
+                        "response": {}
+                    },
+                    "timeout": 10000
+                }
+            },
+            "id": "49718716-c21a-427a-aa04-5b572f1ddf73",
+            "name": "retorno_crm",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1216,
+                192
+            ],
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "JUbUR8EugZySbckF",
+                    "name": "Header Auth account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "={{ $json.prompt }}",
+                "hasOutputParser": true,
+                "options": {
+                    "systemMessage": "Voc\u00ea \u00e9 a BIA, vendedora consultiva da Teknos Assist\u00eancia \u2014 loja de iPhone, Xiaomi, MacBook, perfumes \u00e1rabes e assist\u00eancia t\u00e9cnica em Cerqueira C\u00e9sar/SP, com mais de 20 anos no mercado.\n\nVoc\u00ea conversa com o cliente DIRETAMENTE no WhatsApp privado dele. Nunca pe\u00e7a \"me chama no privado\" \u2014 voc\u00ea j\u00e1 est\u00e1 nele.\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nQUEM VOC\u00ca \u00c9\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nVoc\u00ea \u00e9 a vendedora que todo cliente quer ter do outro lado: simp\u00e1tica, brasileira, levemente informal, MAS inteligente. Voc\u00ea L\u00ca o cliente antes de responder.\n\nVoc\u00ea n\u00e3o \u00e9 um cat\u00e1logo. N\u00e3o \u00e9 um menu. N\u00e3o \u00e9 um rob\u00f4 de FAQ.\n\nVoc\u00ea pensa antes de cada resposta:\n- \"O que esse cliente realmente quer?\"\n- \"Ele j\u00e1 me deu informa\u00e7\u00e3o suficiente pra eu apresentar op\u00e7\u00e3o, ou preciso entender melhor?\"\n- \"Que tom combina com o jeito que ele t\u00e1 escrevendo comigo?\"\n\nSe o cliente \u00e9 direto, voc\u00ea \u00e9 direta. Se o cliente \u00e9 cordial, voc\u00ea \u00e9 cordial. Se ele t\u00e1 com pressa, voc\u00ea n\u00e3o enrola.\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nCOMO VOC\u00ca PENSA (princ\u00edpios universais)\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\n1. Investigue s\u00f3 quando precisa (leia o cliente) \u2014 se o cliente AINDA n\u00e3o tem modelo em mente, fa\u00e7a 1 pergunta leve de descoberta antes de recomendar. Se ele J\u00c1 citou um modelo, N\u00c3O fa\u00e7a descoberta \u2014 acolha, afirme o modelo, d\u00ea o pre\u00e7o ENXUTO (via tool) e pergunte a troca.\n2. Uma pergunta por vez \u2014 voc\u00ea n\u00e3o \u00e9 interrogat\u00f3rio. Se precisar de 3 informa\u00e7\u00f5es, descobre 1, conversa, descobre outra, conversa.\n3. NUNCA invente \u2014 pre\u00e7o, estoque, garantia, desconto, parcelamento, valor de servi\u00e7o, notas de perfume. Se n\u00e3o est\u00e1 nas suas tools, voc\u00ea n\u00e3o sabe. Ponto.\n4. Adapte o que est\u00e1 na tool \u2014 quando consultar, N\u00c3O leia em voz alta como rob\u00f4. Pega a informa\u00e7\u00e3o e responde NATURAL, no contexto da pergunta.\n5. Leia o tom do cliente \u2014 impaciente/urgente/p\u00e2nico = corta caminho e faz handoff r\u00e1pido. Calmo = pode aprofundar.\n6. HONESTIDADE acima de venda \u2014 a Teknos N\u00c3O \u00e9 autorizada Apple/Xiaomi. Nunca minta sobre isso. Valorize o que \u00e9 real: 20+ anos, CNPJ, NF, garantia.\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nSUAS FERRAMENTAS (use SEMPRE \u2014 n\u00e3o responda de cabe\u00e7a)\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nBIA_CRM_FULL_vendas_iphone \u2014 iPhone\n- secao=\"tudo\" \u2192 contexto completo: tabela + estrat\u00e9gia + instrucoes_uso. Use por padr\u00e3o e SIGA as instrucoes_uso que ela retorna.\n- secao=\"tabela\" \u2192 pre\u00e7os (vem com instru\u00e7\u00f5es de uso \u2014 nunca d\u00ea pre\u00e7o sem cumprir a ordem: descoberta \u2192 valor \u2192 pre\u00e7o com moldura)\n- secao=\"estrategia\" \u2192 roteiro de venda + argumentos\n\nBIA_CRM_FULL_vendas_xiaomi \u2014 Xiaomi / Redmi / POCO\n- secao=\"estrategia\" \u2192 posicionamento, regra de troca\n- secao=\"triagem\" \u2192 perguntas inteligentes pra qualificar\n- secao=\"argumentos\" \u2192 obje\u00e7\u00f5es (gen\u00e9rico, trava, WhatsApp, garantia, troca)\n- secao=\"fallback\" \u2192 tudo junto\n\nBIA_CRM_FULL_assistencia \u2014 Conserto / Reparo / Assist\u00eancia t\u00e9cnica\n- secao=\"estrategia\" \u2192 como abordar, regras de valor, leitura do cliente\n- secao=\"triagem\" \u2192 perguntas inteligentes por tipo de problema\n- secao=\"argumentos\" \u2192 obje\u00e7\u00f5es (pre\u00e7o, prazo, garantia, urg\u00eancia)\n- secao=\"fallback\" \u2192 tudo junto\n\nBIA_CRM_FULL_dados_loja \u2014 Tudo sobre a loja (NOVA estrutura por se\u00e7\u00f5es!)\n- secao=\"localizacao\" \u2192 endere\u00e7o, hor\u00e1rio, feriados, mapa\n- secao=\"politicas\" \u2192 pagamento, garantia, troca, regras gerais\n- secao=\"produtos_geral\" \u2192 portf\u00f3lio (o que vende)\n- secao=\"cultura_historia\" \u2192 funda\u00e7\u00e3o, Daniel, 20 anos, diferenciais\n- secao=\"parceiros_indicacoes\" \u2192 Michel e Bany (TV/eletro)\n- secao=\"perfumes_detalhe\" \u2192 marcas, triagem, pre\u00e7o, originais \u00e1rabes\n- secao=\"certificacoes_credenciais\" \u2192 CNPJ, NF, N\u00c3O-autoriza\u00e7\u00e3o\n- secao=\"atendimento_canais\" \u2192 telefones, redes sociais\n- secao=\"fallback\" \u2192 resumo geral (use em d\u00favida)\n\n\u26a0\ufe0f N\u00c3O existe ferramenta de consulta de estoque pra Xiaomi/Smartwatch/Perfume/MacBook/Acess\u00f3rio. Quem confirma disponibilidade \u00e9 o atendente humano via handoff.\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nREGRA DE PRE\u00c7O DE iPhone (cr\u00edtico)\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nO pre\u00e7o de iPhone NUNCA sai da sua cabe\u00e7a \u2014 vem SEMPRE e SOMENTE da tool BIA_CRM_FULL_vendas_iphone.\n- ANTES de falar pre\u00e7o voc\u00ea \u00e9 OBRIGADA a chamar a tool (secao=\"tabela\" ou \"tudo\"). Escreva o n\u00famero EXATO que ela retornou. N\u00e3o arredonde, n\u00e3o chute. Se n\u00e3o chamou a tool, n\u00e3o d\u00ea pre\u00e7o.\n- Os pre\u00e7os mudam toda hora; a tool \u00e9 o \u00fanico lugar certo. N\u00famero de cabe\u00e7a = ERRO grave.\n\nREGRA DE CONSULTA OBRIGAT\u00d3RIA (iPhone)\n\u2022 Se a mensagem do cliente mencionar \u201ciPhone\u201d ou qualquer modelo (ex.: 17, 17 Pro, 17 Pro Max) OU pedir \u201cpre\u00e7o/valor\u201d, voc\u00ea DEVE chamar a tool BIA_CRM_FULL_vendas_iphone ANTES de responder.\n\u2022 Padr\u00e3o: secao=\"tudo\" na primeira consulta do turno (para ter tabela + estrat\u00e9gia + instru\u00e7\u00f5es).\n\u2022 Se for escrever n\u00famero de pre\u00e7o neste mesmo turno, chame novamente com secao=\"tabela\".\n\u2022 Fora do hor\u00e1rio: tamb\u00e9m \u00e9 OBRIGAT\u00d3RIO consultar (primeira men\u00e7\u00e3o a iPhone \u21d2 chama a tool), mesmo que fa\u00e7a 1 pergunta de descoberta antes do pre\u00e7o.\n\nVALIDA\u00c7\u00c3O ANTES DE ENVIAR PRE\u00c7O\n\u2022 Se a resposta incluir n\u00famero de pre\u00e7o e neste turno voc\u00ea n\u00e3o chamou a tool BIA_CRM_FULL_vendas_iphone, PARE e chame a tool. Nunca escreva pre\u00e7o sem consulta no turno atual.\n\nENTREGA DO PRE\u00c7O \u00c9 PROGRESSIVA (n\u00e3o despeje tudo):\n- 1\u00aa vez: ENXUTO \u2192 pre\u00e7o no PIX + \"ou at\u00e9 12x\" + 1 prova de valor (1 ano e meio de garantia: 1 Apple + 6 da loja, + nota fiscal) + CTA. N\u00c3O liste 5% OFF nem kit gr\u00e1tis ainda.\n- S\u00f3 se o cliente INSISTIR no pre\u00e7o, HESITAR ou COMPARAR: libere as cartas guardadas \u2192 \"no PIX ainda ganha 5% OFF e j\u00e1 sai com kit prote\u00e7\u00e3o gr\u00e1tis (capa + 2 pel\u00edculas) \ud83d\udc4d\".\n- CTA seguro: NUNCA ofere\u00e7a \"reservar/separar\" unidade (voc\u00ea n\u00e3o v\u00ea estoque; reserva \u00e9 do atendente). Use \"deixo seu interesse anotado pro atendente confirmar na abertura\" / \"prefere passar na loja?\". Entrega quem verifica \u00e9 o atendente \u2014 nunca prometa entrega.\n\nESTOQUE (tr\u00e1fego pago)\nCARRO-CHEFE (sempre temos): iPhone 17, 17 Pro e 17 Pro Max \u2192 ancore o lead do an\u00fancio nesses.\nSEMINOVO: estoque muda muito \u2014 NUNCA cote pre\u00e7o, NUNCA afirme ter o modelo X, sempre handoff.\n17 PRO / PRO MAX: pre\u00e7o varia por cor \u2014 NUNCA pergunte a cor, mostre a FAIXA que a tool retornar.\n\nRegra de ouro: o pre\u00e7o nunca vem primeiro e nunca vem sozinho.\nSempre consulte BIA_CRM_FULL_vendas_iphone (secao=\"tudo\") e SIGA as instrucoes_uso que ele retorna.\n\nOrdem obrigat\u00f3ria (N\u00c3O pule etapas):\n\n1) LEIA O CLIENTE \u2014 dois caminhos\nA) Cliente AINDA N\u00c3O tem modelo em mente (\"quero um iphone\", \"qual indicam?\"):\n\u2192 Descoberta: UMA pergunta leve (uso principal). Depois recomende 1-2 modelos e siga pro valor (tamb\u00e9m progressivo).\n\nB) Cliente J\u00c1 citou um modelo (\"quero o 17 Pro Max\", \"valor do 17?\"):\n\u2192 N\u00c3O pergunte c\u00e2mera/bateria/tela \u2014 ele j\u00e1 decidiu:\n   1. ACOLHE + AFIRMA em 1 frase real (forcas_por_modelo da tool). Ex: \"17 Pro Max \u00e9 o top da linha \u2014 tela grande, a melhor bateria e c\u00e2mera muito forte \ud83d\ude0d\"\n   2. PRE\u00c7O ENXUTO (consulte a tool, n\u00famero exato): pre\u00e7o no PIX + \"ou at\u00e9 12x\" + 1 prova de valor (1 ano e meio de garantia + NF). Fora do hor\u00e1rio: acrescente leve \"(valor de refer\u00eancia da \u00faltima atualiza\u00e7\u00e3o, confirmo na abertura)\" uma \u00fanica vez.\n   3. PERGUNTA A TROCA (sempre, logo depois do pre\u00e7o): \"Voc\u00ea vai dar um iPhone na troca ou seria s\u00f3 a compra?\"\n      \u2022 iPhone na troca (s\u00f3 11+): \"Boa! Quem avalia o valor da troca \u00e9 o atendente \u2014 j\u00e1 adianto seu interesse \ud83d\udc4d\" \u2192 handoff.\n      \u2022 Outra marca: \"Na troca a gente trabalha s\u00f3 com iPhone, mas d\u00e1 pra fazer no PIX ou em at\u00e9 12x \ud83d\udc4d\"\n      \u2022 S\u00f3 compra: \"Show! T\u00e1 pensando em pegar pra agora?\" \u2192 avan\u00e7a.\n   SE INSISTIR/HESITAR/COMPARAR: libere as cartas guardadas \u2192 \"no PIX ainda ganha 5% OFF e j\u00e1 sai com kit prote\u00e7\u00e3o gr\u00e1tis (capa + 2 pel\u00edculas) \ud83d\udc4d\".\n   CTA seguro: NUNCA \"reservar/separar\". Use \"deixo seu interesse anotado pro atendente confirmar na abertura\" ou \"prefere passar na loja?\".\n\n2) RECOMENDA\u00c7\u00c3O + VALOR\nRecomende 1 modelo (no m\u00e1x 2) e explique POR QUE encaixa no que ele falou. A\u00ed apresente os benef\u00edcios: revis\u00e3o (seminovo), NF, garantia, suporte presencial da loja, kit prote\u00e7\u00e3o gr\u00e1tis, 20 anos de Teknos na cidade.\n\n3) PRE\u00c7O COM MOLDURA \u2014 s\u00f3 agora, nunca o n\u00famero pelado\nNo mesmo f\u00f4lego: PIX 5% OFF + op\u00e7\u00e3o em at\u00e9 12x + kit gr\u00e1tis + garantia.\nEx: \"Fica R$X no PIX j\u00e1 com 5% de desconto, ou 12x de R$Y, e j\u00e1 sai com capa, 2 pel\u00edculas e garantia \ud83d\ude0a\"\nCart\u00e3o: valor final \u00e9 com o atendente. Mostre no m\u00e1ximo 1-2 op\u00e7\u00f5es.\n\n4) PR\u00d3XIMO PASSO\nTermine com pergunta que move a venda (\"qual te interessou mais?\") ou fa\u00e7a handoff se houver sinal de fechamento.\n\nSE O CLIENTE PEDIR O PRE\u00c7O LOGO DE CARA:\n\u2192 N\u00e3o d\u00ea o n\u00famero ainda. Acolha e fa\u00e7a 1 pergunta de descoberta.\n\u2192 Se ele INSISTIR (pedir o pre\u00e7o 2 vezes), a\u00ed informe COM a moldura completa \u2014 nunca pare\u00e7a que est\u00e1 escondendo.\n\nCLIENTE COMPARANDO (\"15 ou 16?\"): n\u00e3o jogue cat\u00e1logo. Pergunte o uso principal e recomende com argumento, depois pre\u00e7o com moldura.\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nCOMO ATENDER Xiaomi / Redmi / POCO\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nVoc\u00ea N\u00c3O consulta estoque. Triagem inteligente + handoff com contexto.\n\nSEMPRE consulte a tool BIA_CRM_FULL_vendas_xiaomi antes de responder:\n- Cliente vago \u2192 secao=\"triagem\"\n- Cliente fez obje\u00e7\u00e3o (gen\u00e9rico, trava, troca, garantia) \u2192 secao=\"argumentos\"\n- Cliente perguntando amplo / em d\u00favida \u2192 secao=\"fallback\"\n\nN\u00c3O invente argumentos ou perguntas de cabe\u00e7a \u2014 a tool tem o conhecimento curado.\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nCOMO ATENDER Assist\u00eancia T\u00e9cnica / Conserto / Reparo\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nVoc\u00ea N\u00c3O passa valor \u2014 or\u00e7amento sempre depende de avalia\u00e7\u00e3o PRESENCIAL do t\u00e9cnico.\n\nA Teknos faz: \u2705 celular, notebook, computador\nA Teknos N\u00c3O faz: \u274c TV, videogame, tablet (n\u00e3o-Apple), eletrodom\u00e9stico, microondas\n\u2192 Pra essas \u2192 use BIA_CRM_FULL_dados_loja com secao=\"parceiros_indicacoes\" e indica Michel/Bany\n\niPad: caso a caso (atendente confirma)\nOrdem de chegada (SEM agendamento)\nOr\u00e7amento gratuito MAS s\u00f3 presencial\n\nSEMPRE consulte a tool BIA_CRM_FULL_assistencia antes de responder:\n- Cliente descrevendo defeito / problema \u2192 secao=\"triagem\"\n- Cliente perguntando valor, prazo, garantia \u2192 secao=\"argumentos\"\n- Cliente em d\u00favida ampla \u2192 secao=\"fallback\"\n- Pra entender abordagem (cliente em p\u00e2nico, impaciente) \u2192 secao=\"estrategia\"\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nCOMO ATENDER Outros (Smartwatch, Perfume, MacBook, Android n\u00e3o-Xiaomi, Acess\u00f3rio)\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nPerfume: SEMPRE consulte BIA_CRM_FULL_dados_loja com secao=\"perfumes_detalhe\". Fa\u00e7a triagem (uso/presente + prefer\u00eancia olfativa) e depois handoff.\n\nMacBook: triagem leve (novo/seminovo, uso principal) + handoff.\n\nSmartwatch: triagem leve (pra voc\u00ea/presente, marca espec\u00edfica) + handoff.\n\nAndroid n\u00e3o-Xiaomi (Samsung/Motorola): NUNCA negue direto. Diga que em casos espec\u00edficos a loja trabalha, e passa pro atendente confirmar.\n\nAcess\u00f3rio (capinha, pel\u00edcula, fone, cabo): pergunte qual aparelho + handoff.\n\nDepois handoff:\n\"Anotei aqui \ud83d\udc4d s\u00f3 um minutinho que vou passar pro atendente confirmar e te chamar\"\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nQUANDO PASSAR PRO HUMANO (humano: true)\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\n- Qualquer pergunta sobre Xiaomi/Android/Smartwatch/Perfume/MacBook/Acess\u00f3rio/Assist\u00eancia DEPOIS da triagem\n- iPhone: cliente quer FECHAR/COMPRAR, pede desconto, quer dar usado na troca, quer reservar, pergunta sa\u00fade de bateria de seminovo\n- Cliente quer VALOR final no cart\u00e3o (sempre passa)\n- Assist\u00eancia: depois de triagem, ou se cliente impaciente/urgente\n- Cliente hesita ap\u00f3s 2 respostas suas\n- Pergunta fora do seu escopo\n\nComo passar (varie):\n\"Perfeito \ud83d\udc4d deixa eu chamar um especialista aqui pra confirmar tudo certinho com voc\u00ea \ud83d\ude0a\"\n\"Show, vou passar pro atendente que j\u00e1 te chama\"\n\"Anotei aqui, s\u00f3 um minutinho que ele j\u00e1 te responde\"\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nMODO SILENCIOSO\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nSe voc\u00ea fez handoff na mensagem anterior e o cliente responde s\u00f3 com \"ok\", \"valeu\", \"blz\", \"show\", \"\ud83d\udc4d\", \"obrigado\":\n\u2192 Retorne response_text: \"\" (n\u00e3o responda).\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nFORA DO HOR\u00c1RIO (loja fechada)\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nVoc\u00ea recebe \"STATUS DA LOJA AGORA\". Quando estiver FECHADA:\n- N\u00c3O comece a conversa avisando que est\u00e1 fechada. Atenda normal (cumprimente, triagem, apresente, pre\u00e7o com moldura).\n- IMPORTANTE: fora do hor\u00e1rio s\u00f3 falta o atendente pra ASSUMIR/FECHAR \u2014 o resto voc\u00ea faz COMPLETO. D\u00e1 o pre\u00e7o (via tool) ENXUTO e normal, recomenda, pergunta troca, tira d\u00favida. Ao dar o pre\u00e7o, acrescente UMA vez, leve: \"(valor de refer\u00eancia da \u00faltima atualiza\u00e7\u00e3o, confirmo certinho quando a loja abrir)\" \u2014 n\u00e3o repita. N\u00c3O fa\u00e7a handoff (mantenha humano: false): diga que j\u00e1 deixa o interesse anotado e o atendente finaliza na abertura (seg-sex 9h-18h, s\u00e1b 9h-17h, domingo fechado).\n- Se o cliente mudar de assunto, atenda normal \u2014 n\u00e3o fique presa no assunto anterior.\n- Quando estiver ABERTA: n\u00e3o mencione hor\u00e1rio e o handoff funciona normal.\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nSTATUS DE CONSERTO (\"meu aparelho j\u00e1 est\u00e1 pronto?\")\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nQuando o cliente quer saber o status de um conserto que deixou na loja:\n- Voc\u00ea N\u00c3O sabe e NUNCA inventa o status.\n- Pegue nome + modelo (uma coisa por vez, sem pressa).\n- LOJA ABERTA: depois de ter nome+modelo, passe pro atendente de assist\u00eancia (humano: true, use a palavra \"conserto\" no resumo).\n- LOJA FECHADA: N\u00c3O transfira. Anote nome+modelo, diga que o pessoal da assist\u00eancia confirma no hor\u00e1rio comercial, e continue dispon\u00edvel.\n\nNUNCA marque handoff no turno em que est\u00e1 s\u00f3 PEDINDO o nome/modelo \u2014 s\u00f3 depois de ter a informa\u00e7\u00e3o (e com a loja aberta).\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nOBJE\u00c7\u00c3O \"achei mais barato\" (t\u00e9cnica do espelho) + SCRIPTS\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nUMA etapa por turno: 1) ISOLA \"se aqui tivesse o mesmo valor, fecharia com a gente?\" 2) MOTIVO \"e por qu\u00ea com a gente?\" 3) ESPELHA o motivo dele + benef\u00edcios reais (pega na hora, 5% OFF no PIX, kit prote\u00e7\u00e3o gr\u00e1tis, NF, 1 ano e meio de garantia presencial) e fecha \"quer que eu chame o atendente?\". No parcelado: \"a diferen\u00e7a fica pequena, o atendente mostra a parcela\" \u2014 NUNCA prometa taxa.\n\nAbertura tr\u00e1fego frio: \"Oi! Vi seu interesse em iPhone \ud83d\ude0a Voc\u00ea j\u00e1 usa iPhone hoje ou t\u00e1 vindo de Android?\"\nSeminovo: \"Temos seminovos revisados que entram e saem r\u00e1pido \u2014 confirmo com o atendente qual tem hoje na sua faixa \ud83d\udc4d\"\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nNUNCA FA\u00c7A\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\n- Dar o pre\u00e7o de iPhone de cara, antes de descoberta e valor \u2014 pre\u00e7o \u00e9 a \u00daLTIMA etapa (s\u00f3 fura se o cliente insistir 2x)\n- Inventar pre\u00e7o, estoque, garantia, parcelamento, desconto, valor de servi\u00e7o\n- Escrever um pre\u00e7o que N\u00c3O veio da tool nesta conversa \u2014 \u00e9 inven\u00e7\u00e3o (ERRO grave)\n- Despejar 5% OFF + kit gr\u00e1tis na 1\u00aa resposta de pre\u00e7o \u2014 entrega \u00e9 progressiva\n- Oferecer reservar/separar uma unidade \u2014 voc\u00ea n\u00e3o v\u00ea estoque\n- Prometer entrega \u2014 quem verifica entrega/rota \u00e9 o atendente\n- Cotar pre\u00e7o de seminovo ou afirmar que tem o modelo X de seminovo \u2014 sempre handoff\n- Adiar o pre\u00e7o de iPhone LACRADO pro \"hor\u00e1rio comercial\" \u2014 d\u00ea na hora (via tool), inclusive de madrugada\n- Fazer pergunta de descoberta quando o cliente J\u00c1 citou um modelo\n- Negociar valor de iPhone ou prometer desconto\n- Dizer que a Teknos \u00e9 AUTORIZADA Apple/Xiaomi (N\u00c3O \u00c9)\n- Dizer que tem ou n\u00e3o tem um Xiaomi/perfume/smartwatch/MacBook em estoque \u2014 voc\u00ea n\u00e3o sabe\n- Passar valor de assist\u00eancia t\u00e9cnica \u2014 sempre depende de avalia\u00e7\u00e3o PRESENCIAL\n- Inventar nota olfativa de perfume \u2014 indica fragrantica.com.br\n- Comprar aparelho usado do cliente \u2014 a loja N\u00c3O compra (s\u00f3 aceita iPhone 11+ como entrada/troca em compra)\n- Aceitar Android na entrada da troca \u2014 s\u00f3 iPhone 11+\n- Dizer \"vou verificar\" pra iPhone (voc\u00ea j\u00e1 tem a tabela)\n- Pedir \"me chama no privado\" (j\u00e1 t\u00e1)\n- Pedir nome, CPF ou dados pessoais \u2014 atendente cuida\n- Listar mais de 3 produtos numa mensagem\n- Perguntar cor de iPhone\n- Repetir a MESMA frase de triagem com clientes diferentes \u2014 varie naturalmente\n- Inventar argumentos / perguntas de Xiaomi ou assist\u00eancia de cabe\u00e7a \u2014 sempre use as tools\n- Despejar TODA a informa\u00e7\u00e3o da loja de uma vez \u2014 responda s\u00f3 o que foi perguntado\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nFORMATO DA RESPOSTA\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nRetorne JSON:\n{\n  \"intencao\": \"string curta \u2014 o que o cliente quer\",\n  \"complexidade\": \"baixa|media|alta\",\n  \"lead_score\": 0-10,\n  \"urgencia\": \"baixa|media|alta\",\n  \"humano\": true|false,\n  \"estado_atendimento\": \"descoberta|qualificando|apresentando|negociando|fechando|handoff|silencioso\",\n  \"resumo\": \"1 frase do contexto do cliente\",\n  \"response_text\": \"mensagem natural pro WhatsApp\"\n}\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nTOM E ESTILO\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\n- Brasileiro, informal mas respeitoso\n- Frases curtas, no m\u00e1ximo 4 linhas\n- Emojis com modera\u00e7\u00e3o \u2014 \ud83d\ude0a \ud83d\udc4d\n- NUNCA pare\u00e7a que t\u00e1 lendo de um script\n- Use o NOME do cliente quando souber\n- Varie aberturas, transi\u00e7\u00f5es e fechamentos\n- Se errar algo, assuma natural: \"Opa, foi mal! Deixa eu corrigir \ud83d\ude0a\"\n\nA regra mais importante: leia o cliente, pense, responda como gente faria \u2014 mas com o conhecimento de uma vendedora experiente da Teknos.\n"
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 3.1,
+            "position": [
+                112,
+                192
+            ],
+            "id": "db9d2765-5f81-496f-ba2a-e5493c6a5bc1",
+            "name": "AI Agent"
+        },
+        {
+            "parameters": {
+                "sessionIdType": "customKey",
+                "sessionKey": "={{ $json.whatsapp || $json.lead_id || $json.whatsapp_raw }}",
+                "contextWindowLength": 20
+            },
+            "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+            "typeVersion": 1.3,
+            "position": [
+                -80,
+                416
+            ],
+            "id": "d183138a-f757-4a18-b77e-6621c195420f",
+            "name": "Simple Memory"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "loose",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "humano-true-cond-0001",
+                            "leftValue": "={{ $json.crm_payload.metadata.humano }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "true",
+                                "singleValue": true
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                992,
+                384
+            ],
+            "id": "14c1fc85-e6d7-4bfd-bf24-f968270becc9",
+            "name": "handoff_necessario"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://n8n.teknoscel.shop/webhook/bia-handoff",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ lead_id: $json.crm_payload.lead_id, handoff_reason: $json.crm_payload.metadata.handoff_reason, metadata: $json.crm_payload.metadata }) }}",
+                "options": {
+                    "timeout": 10000
+                }
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1216,
+                384
+            ],
+            "id": "f9c8f6dc-a011-4155-8b5a-6959e5726cda",
+            "name": "disparar_handoff",
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "JUbUR8EugZySbckF",
+                    "name": "Header Auth account"
+                }
+            },
+            "onError": "continueRegularOutput"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://n8n.teknoscel.shop/webhook/bia-memoria",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ lead_id: $json.crm_payload.lead_id, resumo: $json.crm_payload.metadata.resumo }) }}",
+                "options": {
+                    "timeout": 8000
+                }
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                992,
+                0
+            ],
+            "id": "28ae9c23-17ce-4775-a7c5-dadcac1c984e",
+            "name": "salvar_memoria",
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "JUbUR8EugZySbckF",
+                    "name": "Header Auth account"
+                }
+            },
+            "onError": "continueRegularOutput"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "loose",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "is-audio-1",
+                            "leftValue": "={{ $json.mediaType }}",
+                            "rightValue": "audio",
+                            "operator": {
+                                "type": "string",
+                                "operation": "equals",
+                                "name": "filter.operator.equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                -1776,
+                192
+            ],
+            "id": "f85c1596-c8f1-4a8e-8652-7c187c6db45d",
+            "name": "audio_check"
+        },
+        {
+            "parameters": {
+                "url": "={{ $json.mediaUrl }}",
+                "options": {
+                    "response": {
+                        "response": {
+                            "responseFormat": "file"
+                        }
+                    }
+                }
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                -1552,
+                192
+            ],
+            "id": "89a2f431-1b7f-40ea-a3b7-5d69af7bbc13",
+            "name": "baixar_audio",
+            "onError": "continueRegularOutput"
+        },
+        {
+            "parameters": {
+                "mode": "runOnceForEachItem",
+                "jsCode": "const item = $input.item;\nconst bin = item.binary?.data;\nif (bin) {\n  bin.fileName = 'audio.ogg';\n  bin.fileExtension = 'ogg';\n  bin.mimeType = 'audio/ogg';\n}\nreturn item;"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -1328,
+                192
+            ],
+            "id": "d9253718-d624-4f45-aaf6-b8464632bec0",
+            "name": "prep_audio_bin"
+        },
+        {
+            "parameters": {
+                "resource": "audio",
+                "operation": "transcribe",
+                "options": {}
+            },
+            "id": "7d4bd5e9-4979-466b-9a00-48d61195e85a",
+            "name": "whisper_transcrever",
+            "type": "@n8n/n8n-nodes-langchain.openAi",
+            "typeVersion": 1.8,
+            "position": [
+                -1104,
+                192
+            ],
+            "credentials": {
+                "openAiApi": {
+                    "id": "MC7APsjpWhnuOdKF",
+                    "name": "OpenAI account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "mode": "runOnceForEachItem",
+                "jsCode": "return { json: { ...$('normalizar_entrada').item.json, current_message: $json.text || '' } };"
+            },
+            "id": "8e5bb9be-127e-4458-a8b8-34d5b3e4ebe3",
+            "name": "aplicar_transcricao",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -880,
+                192
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "loose",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "tem-resposta-0001",
+                            "leftValue": "={{ $json.crm_payload.respostas.length }}",
+                            "rightValue": 0,
+                            "operator": {
+                                "type": "number",
+                                "operation": "gt"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                992,
+                192
+            ],
+            "id": "ff3a0d38-e5d6-4651-889d-6da1ff6819c7",
+            "name": "tem_resposta?"
+        },
+        {
+            "parameters": {
+                "description": "=Tool UNICA de iPhone e FONTE UNICA do preco \u2014 chame ANTES de qualquer resposta sobre iPhone, INCLUSIVE de madrugada. secao=\"tabela\" (precos atuais + politica seminovo + instrucoes), secao=\"estrategia\" (dois caminhos, forcas_por_modelo, espelho, handoff), secao=\"tudo\". Preco SO vem daqui, numero exato, nunca de cabeca. Carro-chefe lacrado: VOCE cota. Seminovo: NUNCA cote, handoff.",
+                "source": "=database",
+                "workflowId": {
+                    "__rl": true,
+                    "value": "45kZsyGNoEoiSJBY",
+                    "mode": "list",
+                    "cachedResultUrl": "/workflow/45kZsyGNoEoiSJBY",
+                    "cachedResultName": "BIA_CRM_FULL_vendas_iphone"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "secao": "=={{ $fromAI('secao', 'tabela, estrategia ou tudo', 'string') }}\n",
+                        "consulta": "=={{ $json.current_message || $json.texto || '' }}\n"
+                    },
+                    "matchingColumns": [
+                        "consulta"
+                    ],
+                    "schema": [
+                        {
+                            "id": "consulta",
+                            "displayName": "consulta",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "canBeUsedToMatch": true,
+                            "type": "string",
+                            "removed": false
+                        },
+                        {
+                            "id": "secao",
+                            "displayName": "secao",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "canBeUsedToMatch": true,
+                            "type": "string",
+                            "removed": false
+                        }
+                    ],
+                    "attemptToConvertTypes": false,
+                    "convertFieldsToString": false
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "typeVersion": 2.2,
+            "position": [
+                176,
+                416
+            ],
+            "id": "841ed675-7482-4ea9-b121-7d9a97703730",
+            "name": "BIA_CRM_FULL_vendas_iphone"
+        },
+        {
+            "parameters": {
+                "description": "Use quando o cliente perguntar sobre Xiaomi, Redmi ou POCO. Se\u00e7\u00f5es dispon\u00edveis: 'estrategia' (como abordar), 'triagem' (perguntas inteligentes pra qualificar), 'argumentos' (respostas a obje\u00e7\u00f5es como gen\u00e9rico/trava/WhatsApp/garantia), 'fallback' (tudo junto, use em d\u00favida).",
+                "workflowId": {
+                    "__rl": true,
+                    "value": "z8HnTWhjK125pI70",
+                    "mode": "list",
+                    "cachedResultUrl": "/workflow/z8HnTWhjK125pI70",
+                    "cachedResultName": "BIA_CRM_FULL_vendas_xiaomi"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "secao": "={{ $fromAI(\"secao\", \"qual se\u00e7\u00e3o do conhecimento Xiaomi consultar: estrategia, triagem, argumentos ou fallback\", \"string\") }}"
+                    },
+                    "matchingColumns": [
+                        "secao"
+                    ],
+                    "schema": [
+                        {
+                            "id": "secao",
+                            "displayName": "secao",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "canBeUsedToMatch": true,
+                            "type": "string",
+                            "removed": false
+                        }
+                    ],
+                    "attemptToConvertTypes": false,
+                    "convertFieldsToString": false
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "typeVersion": 2.2,
+            "position": [
+                48,
+                416
+            ],
+            "id": "dd754b22-9476-4df3-afeb-a265365bd027",
+            "name": "BIA_CRM_FULL_vendas_xiaomi"
+        },
+        {
+            "parameters": {
+                "description": "={{ $fromAI(\"secao\", \"qual se\u00e7\u00e3o do conhecimento de assist\u00eancia consultar: estrategia, triagem, argumentos ou fallback\", \"string\") }}",
+                "workflowId": {
+                    "__rl": true,
+                    "value": "45ogSA0qX5NLkiNH",
+                    "mode": "list",
+                    "cachedResultUrl": "/workflow/45ogSA0qX5NLkiNH",
+                    "cachedResultName": "BIA_CRM_FULL_assistencia"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "secao": "={{ $fromAI(\"secao\", \"qual se\u00e7\u00e3o do conhecimento de assist\u00eancia consultar: estrategia, triagem, argumentos ou fallback\", \"string\") }}"
+                    },
+                    "matchingColumns": [
+                        "secao"
+                    ],
+                    "schema": [
+                        {
+                            "id": "secao",
+                            "displayName": "secao",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "canBeUsedToMatch": true,
+                            "type": "string",
+                            "removed": false
+                        }
+                    ],
+                    "attemptToConvertTypes": false,
+                    "convertFieldsToString": false
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "typeVersion": 2.2,
+            "position": [
+                304,
+                416
+            ],
+            "id": "061e0b7f-cbd6-4790-8dd6-06986c18730e",
+            "name": "BIA_CRM_FULL_assistencia"
+        },
+        {
+            "parameters": {
+                "description": "={{ $fromAI(\"secao\", \"qual se\u00e7\u00e3o dos dados da loja consultar: localizacao, politicas, produtos_geral, cultura_historia, parceiros_indicacoes, perfumes_detalhe, certificacoes_credenciais, atendimento_canais ou fallback\", \"string\") }}",
+                "workflowId": {
+                    "__rl": true,
+                    "value": "jLAl5pKOYgfSY3Tm",
+                    "mode": "list",
+                    "cachedResultUrl": "/workflow/jLAl5pKOYgfSY3Tm",
+                    "cachedResultName": "BIA_CRM_FULL_dados_loja"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {},
+                    "matchingColumns": [
+                        "consulta"
+                    ],
+                    "schema": [
+                        {
+                            "id": "secao",
+                            "displayName": "secao",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "canBeUsedToMatch": true,
+                            "type": "string",
+                            "removed": false
+                        }
+                    ],
+                    "attemptToConvertTypes": false,
+                    "convertFieldsToString": false
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "typeVersion": 2.2,
+            "position": [
+                432,
+                416
+            ],
+            "id": "1df20439-8c38-4b96-9904-108da9fa0e5d",
+            "name": "BIA_CRM_FULL_dados_loja"
+        }
+    ],
+    "connections": {
+        "webhook_entrada": {
+            "main": [
+                [
+                    {
+                        "node": "responder_200",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "normalizar_entrada",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "normalizar_entrada": {
+            "main": [
+                [
+                    {
+                        "node": "audio_check",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "identificar_origem": {
+            "main": [
+                [
+                    {
+                        "node": "preparar_prompt",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "preparar_prompt",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "preparar_prompt": {
+            "main": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "openai_model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "resposta_bia": {
+            "main": [
+                [
+                    {
+                        "node": "tem_resposta?",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "handoff_necessario",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "salvar_memoria",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Agent": {
+            "main": [
+                [
+                    {
+                        "node": "resposta_bia",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Simple Memory": {
+            "ai_memory": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_memory",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "structured_parser": {
+            "ai_outputParser": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_outputParser",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "handoff_necessario": {
+            "main": [
+                [
+                    {
+                        "node": "disparar_handoff",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "audio_check": {
+            "main": [
+                [
+                    {
+                        "node": "baixar_audio",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "identificar_origem",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "baixar_audio": {
+            "main": [
+                [
+                    {
+                        "node": "prep_audio_bin",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "prep_audio_bin": {
+            "main": [
+                [
+                    {
+                        "node": "whisper_transcrever",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "whisper_transcrever": {
+            "main": [
+                [
+                    {
+                        "node": "aplicar_transcricao",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "aplicar_transcricao": {
+            "main": [
+                [
+                    {
+                        "node": "identificar_origem",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "tem_resposta?": {
+            "main": [
+                [
+                    {
+                        "node": "retorno_crm",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "BIA_CRM_FULL_vendas_iphone": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "BIA_CRM_FULL_vendas_xiaomi": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "BIA_CRM_FULL_assistencia": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "BIA_CRM_FULL_dados_loja": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "binaryMode": "separate"
+    }
+}

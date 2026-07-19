@@ -1,0 +1,214 @@
+{
+    "id": "45kZsyGNoEoiSJBY",
+    "name": "BIA_CRM_FULL_vendas_iphone",
+    "active": true,
+    "nodes": [
+        {
+            "parameters": {
+                "workflowInputs": {
+                    "values": [
+                        {
+                            "name": "consulta"
+                        },
+                        {
+                            "name": "secao"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.executeWorkflowTrigger",
+            "typeVersion": 1.1,
+            "position": [
+                -672,
+                192
+            ],
+            "id": "a64ab7ff-9412-4043-8c4a-c9d856ca33b3",
+            "name": "When Executed by Another Workflow"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Fonte \u00fanica dos dados de iPhone\nconst DADOS = {\n  TABELA_PRECOS: {\n    carro_chefe_lacrados: {\n      \"iPhone 17 256GB\": {\n        preco_pix: 5900,\n        garantia: \"1 ano Apple + 6 meses loja (1 ano e meio total)\",\n        disponibilidade: \"sempre\",\n      },\n      \"iPhone 17 Pro 256GB\": {\n        preco_pix_faixa: \"7300 a 7600\",\n        obs_cor: \"Varia por cor - NUNCA pergunte a cor, mostre a faixa.\",\n        garantia: \"1 ano Apple + 6 meses loja (1 ano e meio total)\",\n        disponibilidade: \"sempre\",\n      },\n      \"iPhone 17 Pro Max 256GB\": {\n        preco_pix_faixa: \"R$ 7.780 a R$ 7.980\",\n        preco_pix_laranja_e_azul: 7780,\n        preco_pix_prata: 7880,\n        obs_cor: \"Varia por cor - se o cliente NAO citar cor, informe s\u00f3 a FAIXA. Se citar: Laranja/Azul = R$ 7.780; Prata = R$ 7.980.\",\n        garantia: \"1 ano Apple + 6 meses loja (1 ano e meio total)\",\n        disponibilidade: \"sempre\",\n      },\n    },\n    outros_lacrados: {\n      \"iPhone 16 128GB\": {\n        preco_pix: 4690,\n        garantia: \"1 ano Apple + 6 meses loja (1 ano e meio total)\",\n        disponibilidade: \"sob_consulta\",\n      },\n    },\n    seminovos: {\n      politica:\n        \"A Bia NAO cota pre\u00e7o de seminovo, NAO afirma modelo/disponibilidade. Sempre HANDOFF pro atendente confirmar o que tem hoje.\",\n      linha_que_costumamos_trabalhar:\n        \"Geralmente iPhone 13 ao 15 (varia muito).\",\n      garantia: \"6 meses loja\",\n      disponibilidade: \"sob_consulta_sempre_handoff\",\n    },\n    observacao_precos:\n      \"Valores de mercado variam. Confirme tabela vigente antes de cotar. Pro/Pro Max t\u00eam pre\u00e7o por COR: mostre FAIXA; cor/valor final o atendente confirma.\",\n    desconto_pix: \"5% OFF\",\n    parcelado: \"at\u00e9 12x\",\n    kit_protecao_gratis: \"capa + pel\u00edcula + pel\u00edcula c\u00e2mera\",\n  },\n\n  ESTRATEGIA_VENDA: {\n    papel:\n      \"BIA \u00e9 SDR/pre-vendas consultiva. Gera valor, qualifica e encaminha ao atendente/loja. NAO fecha venda e NAO negocia pre\u00e7o.\",\n    modo:\n      \"Consultivo: pre\u00e7o s\u00f3 no fim. Nunca abrir a conversa por pre\u00e7o.\",\n    ancora_trafego_pago:\n      \"Ancorar nos CARRO\u2011CHEFE (17, 17 Pro, 17 Pro Max lacrados). Seminovo: qualifica e HANDOFF (nunca cotar).\",\n    leia_o_cliente:\n      \"Dois caminhos: (A) Sem modelo em mente: 1 pergunta leve (uso principal) e recomenda. (B) Modelo j\u00e1 citado: acolhe + afirma for\u00e7a do modelo, d\u00e1 pre\u00e7o com moldura e avan\u00e7a pro fechamento.\",\n    passo_descoberta_sem_modelo:\n      \"S\u00f3 se o cliente n\u00e3o decidiu: 1 pergunta por vez (dia a dia, c\u00e2mera, bateria, jogo, trabalho, presente). Recomendar 1-2 modelos.\",\n    passo_modelo_citado:\n      \"Modelo j\u00e1 decidido: 1) acolhe + afirma; 2) pre\u00e7o com moldura + garantia 1,5 ano + kit gr\u00e1tis; 3) pergunta da troca antes de encerrar.\",\n    forcas_por_modelo: {\n      \"iPhone 17\":\n        \"Equilibrado: \u00f3tima bateria, c\u00e2mera muito boa, desempenho de sobra. Melhor custo\u2011benef\u00edcio.\",\n      \"iPhone 17 Pro\":\n        \"C\u00e2meras Pro, tela fluida, pot\u00eancia pra tudo.\",\n      \"iPhone 17 Pro Max\":\n        \"Topo: maior tela, melhor bateria e conjunto de c\u00e2meras mais completo.\",\n      \"iPhone 16\":\n        \"Excelente e mais em conta que a linha 17; \u00f3timo pro dia a dia.\",\n    },\n    passo_2_recomendacao:\n      \"Com base na descoberta, recomendar 1 (m\u00e1x. 2) e explicar por que encaixa. Priorize carro\u2011chefe se o or\u00e7amento permitir.\",\n    passo_3_valor:\n      \"Antes de pre\u00e7o: NF, garantia (1 ano Apple + 6 meses loja), kit prote\u00e7\u00e3o gr\u00e1tis, p\u00f3s\u2011venda, at\u00e9 12x, 5% OFF no PIX.\",\n  },\n};\n\n// Sele\u00e7\u00e3o da se\u00e7\u00e3o\nconst secao = String(($json.secao || \"\")).trim().toLowerCase();\nlet dados;\nif (secao === \"tabela\") dados = DADOS.TABELA_PRECOS;\nelse if (secao === \"estrategia\") dados = DADOS.ESTRATEGIA_VENDA;\nelse dados = DADOS;\n\n// Retorno\nreturn [\n  {\n    json: {\n      ok: true,\n      secao: secao || \"tudo\",\n      consulta: $json.consulta || \"\",\n      dados,\n    },\n  },\n];\n"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -448,
+                192
+            ],
+            "id": "2a0187d8-1677-4e06-b9ca-c5ea74553228",
+            "name": "Dados Canonicos"
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "cond-tabela",
+                                        "leftValue": "={{ $json.secao }}",
+                                        "rightValue": "tabela",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "tabela"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "cond-estrategia",
+                                        "leftValue": "={{ $json.secao }}",
+                                        "rightValue": "estrategia",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "estrategia"
+                        }
+                    ]
+                },
+                "options": {
+                    "fallbackOutput": "extra",
+                    "renameFallbackOutput": "tudo"
+                }
+            },
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3.2,
+            "position": [
+                -224,
+                176
+            ],
+            "id": "5357503b-ec72-472e-91dd-70f1a32eeecb",
+            "name": "Roteador secao"
+        },
+        {
+            "parameters": {
+                "mode": "raw",
+                "jsonOutput": "={{ { \"TABELA_PRECOS\": $('Dados Canonicos').first().json.DADOS.TABELA_PRECOS, \"instrucoes_uso\": $('Dados Canonicos').first().json.DADOS.instrucoes_uso } }}",
+                "options": {
+                    "dotNotation": false
+                }
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                0,
+                0
+            ],
+            "id": "acfae80d-9fda-43e0-9807-3ed48c803bfa",
+            "name": "Tabela + Instrucoes"
+        },
+        {
+            "parameters": {
+                "mode": "raw",
+                "jsonOutput": "={{ { \"ESTRATEGIA_VENDA\": $('Dados Canonicos').first().json.DADOS.ESTRATEGIA_VENDA, \"ARGUMENTOS_VENDA\": $('Dados Canonicos').first().json.DADOS.ARGUMENTOS_VENDA, \"HANDOFF\": $('Dados Canonicos').first().json.DADOS.HANDOFF, \"instrucoes_uso\": $('Dados Canonicos').first().json.DADOS.instrucoes_uso } }}",
+                "options": {
+                    "dotNotation": false
+                }
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                0,
+                192
+            ],
+            "id": "ad089c7a-e89d-4d83-9918-64798bb81907",
+            "name": "Estrategia e Argumentos"
+        },
+        {
+            "parameters": {
+                "mode": "raw",
+                "jsonOutput": "=={{ $json.dados }}\n",
+                "options": {
+                    "dotNotation": false
+                }
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                0,
+                384
+            ],
+            "id": "4396c0a0-1f59-4ad7-b982-52306a6ce22f",
+            "name": "Tudo (fallback)"
+        }
+    ],
+    "connections": {
+        "When Executed by Another Workflow": {
+            "main": [
+                [
+                    {
+                        "node": "Dados Canonicos",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Dados Canonicos": {
+            "main": [
+                [
+                    {
+                        "node": "Roteador secao",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Roteador secao": {
+            "main": [
+                [
+                    {
+                        "node": "Tabela + Instrucoes",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Estrategia e Argumentos",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Tudo (fallback)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "binaryMode": "separate"
+    }
+}

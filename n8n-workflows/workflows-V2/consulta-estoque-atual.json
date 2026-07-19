@@ -1,0 +1,150 @@
+{
+  "name": "consulta_estoque_teknos",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "consulta"
+            },
+            {
+              "name": "precoMax"
+            },
+            {
+              "name": "precoMin"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "dbc9dc5f-2ea4-47eb-a350-2ca8d1dee44b",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://app.mercadophone.tech/api.php?class=EstoqueApiController&method=index",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "102778b8-766f-464c-9976-2f18f0dc66b3"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"page\": 1,\n    \"order\": \"id\",\n    \"direction\": \"desc\",\n    \"filters\": {\n        \"codigoProduto\": \"\",\n        \"tipoProdutoId\": \"\",\n        \"imei\": \"\",\n        \"produtoDisponibilidadeId\": \"\"\n    }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "c0726e24-cd4a-4c0c-b6a1-9867fd7dd94f",
+      "name": "Buscar Estoque API"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $('When Executed by Another Workflow').item.json;\nconst consultaRaw = input.consulta || '';\nconst precoMax = input.precoMax ? Number(String(input.precoMax).replace(/[^0-9]/g,'')) : null;\nconst precoMin = input.precoMin ? Number(String(input.precoMin).replace(/[^0-9]/g,'')) : null;\n\nconst dados = $input.item.json;\n// API retorna { data: { totalItens, itens: [...] } }\nconst itens = dados.data?.itens || dados.itens || [];\n\nif (!itens.length) {\n  return [{ json: { resultado: 'Estoque indisponível no momento.' } }];\n}\n\nfunction norm(s) {\n  return (s || '').toLowerCase()\n    .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')\n    .replace(/[^a-z0-9\\s]/g, ' ')\n    .replace(/\\s+/g, ' ').trim();\n}\n\n// Tipos PERMITIDOS (whitelist)\nconst tiposPermitidos = ['celular','notebook','tablet','perfume'];\n\n// Filtra apenas disponíveis e tipos permitidos\nlet filtrados = itens.filter(p => {\n  const disp = (p.disponibilidade || '').toLowerCase();\n  if (!disp.includes('dispon')) return false;\n  const tipo = norm(p.tipoProdutoDescricao || '');\n  return tiposPermitidos.some(t => tipo.includes(t));\n});\n\n// Filtro por preço\nif (precoMax) filtrados = filtrados.filter(p => Number(p.valorVenda || 0) <= precoMax);\nif (precoMin) filtrados = filtrados.filter(p => Number(p.valorVenda || 0) >= precoMin);\n\n// Filtro por consulta — busca em aparelhoDescricao e descricao\nif (consultaRaw.trim()) {\n  const consultaNorm = norm(consultaRaw);\n  // Remove stopwords curtas\n  const stopwords = ['tem','vc','voce','um','uma','de','do','da','que','pra','pro','me','com'];\n  const termos = consultaNorm.split(' ').filter(t => t.length > 2 && !stopwords.includes(t));\n\n  if (termos.length > 0) {\n    const porTermos = filtrados.filter(p => {\n      const aparelho = norm(p.aparelhoDescricao || '');\n      const desc = norm(p.descricao || '');\n      // Todos os termos devem bater (every) — mais preciso\n      return termos.every(t => aparelho.includes(t) || desc.includes(t));\n    });\n    // Se não achou com every, tenta com some (pelo menos 1 termo)\n    if (porTermos.length > 0) {\n      filtrados = porTermos;\n    } else {\n      const porAlgum = filtrados.filter(p => {\n        const aparelho = norm(p.aparelhoDescricao || '');\n        const desc = norm(p.descricao || '');\n        return termos.some(t => aparelho.includes(t) || desc.includes(t));\n      });\n      if (porAlgum.length > 0) filtrados = porAlgum;\n    }\n  }\n}\n\nif (!filtrados.length) {\n  return [{ json: { resultado: `Não encontrei esse produto no estoque no momento.` } }];\n}\n\n// Ordena por preço crescente\nfiltrados.sort((a, b) => Number(a.valorVenda || 0) - Number(b.valorVenda || 0));\n\n// Deduplica por aparelhoId + cor + GB + estado\nconst vistos = new Map();\nfiltrados = filtrados.filter(p => {\n  const chave = `${p.aparelhoId}-${p.corId}-${p.gbId}-${p.estadoProdutoId}`;\n  if (vistos.has(chave)) return false;\n  vistos.set(chave, true);\n  return true;\n});\n\n// Formata resultado (máx 10)\nconst lista = filtrados.slice(0, 10).map(p => {\n  let desc = (p.descricao || p.nome || 'Aparelho');\n  desc = desc.replace(/^\\d+\\s*-\\s*/, '').trim();\n  desc = desc.replace(/\\s*-\\s*(IMEI\\s*2?|SN|SKU)[\\s:][^\\n-]*/gi, '').trim();\n  desc = desc.replace(/\\s*-\\s*Estado:\\s*(NOVO|SEMINOVO)/gi, '').trim();\n  desc = desc.replace(/(\\s*-\\s*\\d+GB)+\\s*$/i, '').trim();\n  desc = desc.replace(/-\\s*$/, '').trim();\n  const estado = (p.estadoProdutoDescricao || '').toLowerCase();\n  const estadoLabel = estado === 'seminovo' ? ' (seminovo)' : estado === 'novo' ? ' (novo)' : '';\n  const preco = p.valorVenda\n    ? `R$ ${Number(p.valorVenda).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`\n    : 'consultar preço';\n  return `• ${desc}${estadoLabel} — ${preco}`;\n}).join('\\n');\n\nconst total = filtrados.length;\nconst rodape = total > 10\n  ? `\\n(${total} unidades disponíveis — mostrando as 10 mais baratas)`\n  : `(${total} unidade${total > 1 ? 's' : ''} disponível)`;\n\nreturn [{ json: { resultado: `${lista}\\n${rodape}` } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "47df164f-1c34-4a4c-9355-b7997661a1d7",
+      "name": "Filtrar e Formatar Estoque"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "out-001",
+              "name": "resultado",
+              "value": "={{ $json.resultado }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        672,
+        0
+      ],
+      "id": "7aae4696-3131-4920-bd7a-26669cd5916a",
+      "name": "Retornar Resultado"
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "consulta": "iphone 15",
+          "precoMax": "",
+          "precoMin": ""
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Buscar Estoque API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Estoque API": {
+      "main": [
+        [
+          {
+            "node": "Filtrar e Formatar Estoque",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar e Formatar Estoque": {
+      "main": [
+        [
+          {
+            "node": "Retornar Resultado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "54a20e85-5ce6-47ad-9448-35fb07a6fa23",
+  "meta": {
+    "instanceId": "5e47b439c7cca7acbdf873759d2a89e5db42c72f7bddea3db88db46c3b8df18a"
+  },
+  "id": "Lao12SnPAlm1Diwr",
+  "tags": []
+}

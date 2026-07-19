@@ -1,0 +1,60 @@
+{
+    "id": "otWR80EGSBUBmxC0",
+    "name": "BIA_CRM_FULL_vendas_iphone",
+    "active": true,
+    "nodes": [
+        {
+            "parameters": {
+                "workflowInputs": {
+                    "values": [
+                        {
+                            "name": "consulta"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.executeWorkflowTrigger",
+            "typeVersion": 1.1,
+            "position": [
+                0,
+                0
+            ],
+            "id": "4b6c23c3-9d7e-4318-941c-166349259a00",
+            "name": "When Executed by Another Workflow"
+        },
+        {
+            "parameters": {
+                "mode": "raw",
+                "jsonOutput": "{\n\"ESTRATEGIA_VENDA\":{\n\"papel\":\"BIA \u00e9 SDR/pr\u00e9-vendedora inteligente. Objetivo principal: gerar valor, qualificar e trazer o cliente para loja ou atendimento humano.\",\n\n\"passo_1_descoberta\":\"Perguntar o que o cliente usa hoje e por que quer trocar. Entender a dor principal: bateria, c\u00e2mera, desempenho, trabalho, jogos ou outro.\",\n\n\"passo_2_valor\":\"Apresentar benef\u00edcios do aparelho destacando revis\u00e3o, garantia, suporte da loja e kit prote\u00e7\u00e3o incluso.\",\n\n\"passo_3_escassez\":\"Usar urg\u00eancia leve e verdadeira: 'Esse modelo costuma sair r\u00e1pido \ud83d\ude0a'\",\n\n\"passo_4_preco\":\"S\u00f3 informar pre\u00e7o ap\u00f3s gerar valor. Nunca iniciar conversa pelo pre\u00e7o.\",\n\n\"passo_5_fechamento\":\"Se cliente demonstrar inten\u00e7\u00e3o forte, aproximar do humano.\",\n\n\"passo_lovable\":\"Se origem=lovable: reconhecer a escolha do cliente primeiro: '\u00d3tima escolha \ud83d\ude0a Pelo que voc\u00ea respondeu, esse modelo faz bastante sentido pra voc\u00ea.'\",\n\n\"NUNCA_fazer\":[\n\"Nunca confirmar estoque f\u00edsico\",\n\"Nunca confirmar reserva\",\n\"Nunca informar sa\u00fade bateria seminovo\",\n\"Nunca inventar desconto\",\n\"Nunca prometer entrega\",\n\"Nunca listar muitos aparelhos ao mesmo tempo\"\n]\n},\n\n\"TABELA_PRECOS\":{\n\n\"seminovos\":{\n\"iPhone 13 128GB\":{\"preco_pix\":2390,\"garantia\":\"6 meses loja\"},\n\"iPhone 13 Pro Max 128GB\":{\"preco_pix\":3400,\"garantia\":\"6 meses loja\"},\n\"iPhone 14 128GB\":{\"preco_pix\":2590,\"garantia\":\"6 meses loja\"},\n\"iPhone 14 Pro 128GB\":{\"preco_pix\":3400,\"garantia\":\"6 meses loja\"},\n\"iPhone 15 128GB\":{\"preco_pix\":3500,\"garantia\":\"6 meses loja\"},\n\"iPhone 15 Pro 128GB\":{\"preco_pix\":4480,\"garantia\":\"6 meses loja\"},\n\"iPhone 15 Pro Max 256GB\":{\"preco_pix\":4850,\"garantia\":\"6 meses loja\"}\n},\n\n\"novos_lacrados\":{\n\"iPhone 17 256GB\":{\"preco_pix\":5500,\"garantia\":\"1 ano Apple + 6 meses loja\"},\n\"iPhone 17 Pro 256GB\":{\"preco_pix\":7700,\"garantia\":\"1 ano Apple + 6 meses loja\"},\n\"iPhone 17 Pro Max 256GB\":{\"preco_pix\":8600,\"garantia\":\"1 ano Apple + 6 meses loja\"}\n},\n\n\"desconto_pix\":\"5% OFF\",\n\"parcelado\":\"at\u00e9 12x\",\n\"kit_protecao_gratis\":\"capa + pel\u00edcula + pel\u00edcula c\u00e2mera\"\n},\n\n\"ARGUMENTOS_VENDA\":{\n\n\"seminovo\":\"Seminovos revisados com garantia de 6 meses da loja.\",\n\n\"novo\":\"Aparelhos lacrados possuem nota fiscal, 1 ano Apple + 6 meses loja.\",\n\n\"kit\":\"J\u00e1 sai protegido com kit incluso.\",\n\n\"objecao_preco\":\"Entendo \ud83d\ude0a Mas considere revis\u00e3o, garantia e suporte local.\",\n\n\"objecao_concorrente\":\"Cada loja trabalha de uma forma. Aqui voc\u00ea conta com suporte da Teknos e garantia.\",\n\n\"objecao_seminovo\":\"Todos passam por revis\u00e3o antes da venda.\"\n},\n\n\"HANDOFF\":{\n\n\"quando\":[\n\"cliente quer fechar\",\n\"cliente pede desconto\",\n\"cliente pergunta sa\u00fade bateria\",\n\"cliente quer reservar\",\n\"cliente pede condi\u00e7\u00e3o especial\",\n\"cliente hesita ap\u00f3s duas respostas\"\n],\n\n\"como\":\"Perfeito \ud83d\udc4d deixa eu chamar um especialista aqui pra confirmar tudo certinho.\"\n}\n}",
+                "options": {
+                    "dotNotation": false
+                }
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                224,
+                0
+            ],
+            "id": "049be53d-5ff1-4ecf-8423-bf863050c8f8",
+            "name": "Vendas iPhone Teknos"
+        }
+    ],
+    "connections": {
+        "When Executed by Another Workflow": {
+            "main": [
+                [
+                    {
+                        "node": "Vendas iPhone Teknos",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "binaryMode": "separate"
+    }
+}

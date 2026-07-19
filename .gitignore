@@ -1,0 +1,20 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+.env.deploy
+*.bak
+
+# Cruft de outro projeto (não pertence ao CRM)
+n8n-workflows/workflows-V2/projeto jarves/
+
+# Next.js build output
+frontend/.next/
+frontend/out/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store

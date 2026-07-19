@@ -1,0 +1,11 @@
+{
+  "acao": "start",
+  "fromMe": false,
+  "chamadoId": 40583,
+  "protocolo": "40583-2026",
+  "sender": "5514991664662",
+  "contact": {
+    "name": "Cliente Teste",
+    "number": "5514991664662"
+  }
+}

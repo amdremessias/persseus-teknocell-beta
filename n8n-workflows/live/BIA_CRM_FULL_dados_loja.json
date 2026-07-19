@@ -1,0 +1,529 @@
+{
+    "id": "jLAl5pKOYgfSY3Tm",
+    "name": "BIA_CRM_FULL_dados_loja",
+    "active": true,
+    "nodes": [
+        {
+            "parameters": {
+                "workflowInputs": {
+                    "values": [
+                        {
+                            "name": "secao"
+                        }
+                    ]
+                }
+            },
+            "id": "ec508e69-b415-4ba0-8cd4-0e11f9482f34",
+            "name": "When Executed by Another Workflow",
+            "type": "n8n-nodes-base.executeWorkflowTrigger",
+            "typeVersion": 1.1,
+            "position": [
+                -544,
+                768
+            ]
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.secao }}",
+                                        "rightValue": "localizacao",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "id": "cc7e6929-a6c6-45fe-8345-08abdf9d3844"
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "localizacao"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.secao }}",
+                                        "rightValue": "politicas",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "id": "251eed8e-6436-4f22-aa13-ee8de55427d2"
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "politicas"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.secao }}",
+                                        "rightValue": "produtos_geral",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "id": "e284794f-5069-4672-af2e-d3064d24a108"
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "produtos_geral"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.secao }}",
+                                        "rightValue": "cultura_historia",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "id": "6921ec63-b548-4d99-b5af-64f008bfc4f6"
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "cultura_historia"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.secao }}",
+                                        "rightValue": "parceiros_indicacoes",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "id": "d3ada298-2dde-4278-9b6d-996970c97f56"
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "parceiros_indicacoes"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.secao }}",
+                                        "rightValue": "perfumes_detalhe",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "id": "bbe163b5-a931-42ab-a396-237661bf0a95"
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "perfumes_detalhe"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.secao }}",
+                                        "rightValue": "certificacoes_credenciais",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "id": "0a6e91bc-4e05-4e44-998e-83bdaa318143"
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "certificacoes_credenciais"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.secao }}",
+                                        "rightValue": "atendimento_canais",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "id": "255e8812-596a-40fc-91ac-37c2da3cc2fc"
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "atendimento_canais"
+                        }
+                    ]
+                },
+                "options": {
+                    "fallbackOutput": "extra",
+                    "renameFallbackOutput": "fallback"
+                }
+            },
+            "id": "df8c2453-6a01-4589-ad03-96112d479bc7",
+            "name": "Roteador secao",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3.2,
+            "position": [
+                -320,
+                656
+            ]
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "loc-content",
+                            "name": "conteudo",
+                            "value": "=LOCALIZA\u00c7\u00c3O, HOR\u00c1RIO E FERIADOS \u2014 TEKNOS ASSIST\u00caNCIA\n\nENDERE\u00c7O:\nRua Jos\u00e9 Joaquim Esteves, 165\nCerqueira C\u00e9sar - SP\n\nREFER\u00caNCIA:\nAo lado da loja Alquimia, pr\u00f3ximo \u00e0 Mar\u00e9.\n\nLINK GOOGLE MAPS:\nhttps://maps.app.goo.gl/2zmcHwxxXbaAqTXAA\n\nHOR\u00c1RIO DE FUNCIONAMENTO REGULAR:\n- Segunda a sexta: 09h \u00e0s 18h\n- S\u00e1bado: 09h \u00e0s 17h\n- Domingo: fechado\n\nFERIADOS NACIONAIS (loja FECHADA o dia todo):\n- 01/01 \u2014 Ano Novo\n- Carnaval \u2014 segunda e ter\u00e7a (data varia)\n- Sexta-feira Santa (data varia)\n- 21/04 \u2014 Tiradentes\n- 01/05 \u2014 Dia do Trabalho\n- Corpus Christi (data varia)\n- 07/09 \u2014 Independ\u00eancia\n- 12/10 \u2014 Nossa Senhora Aparecida\n- 02/11 \u2014 Finados\n- 15/11 \u2014 Proclama\u00e7\u00e3o da Rep\u00fablica\n- 20/11 \u2014 Consci\u00eancia Negra\n- 25/12 \u2014 Natal\n\nFERIADOS MUNICIPAIS DE CERQUEIRA C\u00c9SAR (loja FECHADA):\n- 01/10 \u2014 Padroeira (Santa Teresinha do Menino Jesus)\n- 10/10 \u2014 Anivers\u00e1rio da cidade\n\nINSTRU\u00c7\u00d5ES PARA A BIA:\n\nQUANDO CLIENTE PERGUNTAR \"onde fica?\" / \"qual o endere\u00e7o?\":\nResponda natural, sem ler como rob\u00f4.\nEx: \"A gente fica na Rua Jos\u00e9 Joaquim Esteves, 165, em Cerqueira C\u00e9sar \ud83d\ude0a \u00c9 ao lado da loja Alquimia, perto da Mar\u00e9. Se quiser o mapa, te mando o link\"\n\nQUANDO CLIENTE PERGUNTAR \"t\u00e1 aberto?\" / \"que horas abre?\":\n- Verifique o dia e hor\u00e1rio atual antes de responder\n- Seg-sex: \"Estamos abertos das 9h \u00e0s 18h\"\n- S\u00e1bado: \"S\u00e1bado funcionamos das 9h \u00e0s 17h\"\n- Domingo: \"Domingo n\u00e3o abrimos, mas seg-sex das 9h \u00e0s 18h e s\u00e1bado das 9h \u00e0s 17h estamos por aqui \ud83d\ude0a\"\n- Fora do hor\u00e1rio: \"J\u00e1 fechamos por hoje, mas amanh\u00e3 abrimos \u00e0s 9h. Te respondo assim que abrir!\" (handoff)\n\nQUANDO CLIENTE PERGUNTAR SOBRE FERIADO ESPEC\u00cdFICO (\"abre dia 25?\", \"tem expediente sexta-feira santa?\"):\n- Confira a data contra a lista de feriados nacionais E municipais\n- Se for feriado: \"Dia X a gente fecha pelo [nome do feriado], abre normal no pr\u00f3ximo dia \u00fatil \ud83d\ude0a\"\n- Se N\u00c3O for feriado: \"Dia X funcionamos normal, [hor\u00e1rio do dia da semana]\"\n- Em d\u00favida sobre uma data espec\u00edfica: faz handoff pra o atendente confirmar\n\nQUANDO CLIENTE PEDIR O LINK DO MAPA:\nEnvia: https://maps.app.goo.gl/2zmcHwxxXbaAqTXAA\n\nREGRA DE OURO: nunca leia tudo de uma vez. Responde s\u00f3 o que foi perguntado. Cliente perguntou endere\u00e7o, manda endere\u00e7o (e oferece o mapa). Perguntou hor\u00e1rio, manda hor\u00e1rio. Perguntou feriado, responde sobre aquele feriado espec\u00edfico.",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "444ff959-6197-4a1a-a30a-ec5b6a776d97",
+            "name": "Localizacao",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -96,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "pol-content",
+                            "name": "conteudo",
+                            "value": "=POL\u00cdTICAS \u2014 TEKNOS ASSIST\u00caNCIA\n\n\u2550\u2550\u2550 PAGAMENTO iPHONE \u2550\u2550\u2550\n\n\u00c0 VISTA COM 5% OFF:\n\n* PIX\n* Dinheiro\n\nCART\u00c3O DE CR\u00c9DITO:\n\n* Parcela em at\u00e9 12x\n* Tem juros da m\u00e1quina, mesmo em 1x\n* A BIA N\u00c3O informa valor final no cart\u00e3o\n* Atendente confirma o valor final\n\nIMPORTANTE:\n\n* A BIA n\u00e3o oferece boleto\n* A BIA n\u00e3o menciona boleto espontaneamente\n* Se o cliente perguntar sobre boleto, responder apenas:\n    \u201cNo momento trabalhamos com PIX, dinheiro e cart\u00e3o de cr\u00e9dito \ud83d\ude0a\u201d\n\n\u2550\u2550\u2550 PAGAMENTO OUTROS PRODUTOS \u2550\u2550\u2550\nXiaomi, perfume, smartwatch, MacBook, acess\u00f3rios e demais produtos:\n\n* PIX\n* Dinheiro\n* Cart\u00e3o de d\u00e9bito\n* Cart\u00e3o de cr\u00e9dito \u00e0 vista\n* Cart\u00e3o de cr\u00e9dito parcelado em at\u00e9 10x sem juros\n\nIMPORTANTE:\n\n* A BIA n\u00e3o oferece boleto\n* A BIA n\u00e3o menciona boleto espontaneamente\n* Se o cliente perguntar sobre boleto, responder apenas:\n    \u201cNo momento trabalhamos com PIX, dinheiro, d\u00e9bito e cart\u00e3o de cr\u00e9dito \ud83d\ude0a\u201d\n\n\u2550\u2550\u2550 GARANTIA \u2550\u2550\u2550\n\n* iPhone novo lacrado: 1 ano de garantia Apple + 6 meses de garantia Teknos + nota fiscal no nome do cliente\n* iPhone seminovo: 6 meses de garantia da loja\n* Xiaomi/Android novo: 1 ano de garantia\n* MacBook novo: 1 ano Apple + 6 meses de garantia Teknos\n* MacBook seminovo: 6 meses de garantia da loja\n* Servi\u00e7o de reparo: at\u00e9 3 meses de garantia\n\n\u2550\u2550\u2550 TROCA / DEVOLU\u00c7\u00c3O \u2550\u2550\u2550\n\n* Arrependimento: N\u00c3O aceita\n* Troca: somente por defeito de f\u00e1brica, com comprovante e caixa\n* Entrada de usado: apenas iPhone 11 ou superior\n* Avalia\u00e7\u00e3o do usado: feita pelo atendente\n* A loja N\u00c3O compra aparelho usado em nenhuma hip\u00f3tese\n* N\u00e3o compra celular, computador, tablet, notebook, iPhone ou pe\u00e7as usadas\n\n\u2550\u2550\u2550 ASSIST\u00caNCIA T\u00c9CNICA \u2550\u2550\u2550\n\nFAZEMOS:\n\n* Celular\n* Notebook\n* Computador\n\nN\u00c3O FAZEMOS:\n\n* TV\n* Videogame\n* Tablet n\u00e3o-Apple\n* Eletrodom\u00e9stico\n* Microondas\n\niPad:\n\n* Avalia\u00e7\u00e3o caso a caso\n* Atendente confirma\n\nATENDIMENTO:\n\n* 100% presencial\n* Por ordem de chegada\n* Sem agendamento\n* Or\u00e7amento gratuito, mas somente presencial\n* A BIA n\u00e3o informa valor por foto ou mensagem\n* Cliente pode levar o aparelho de volta sem compromisso\n* Trabalhamos com pe\u00e7as paralelas de qualidade\n* Garantia do reparo: at\u00e9 3 meses\n\nSTATUS DO CONSERTO:\n\n* Presencialmente na loja\n* Ou pelo telefone: (14) 99606-1006\n\nIMPORTANTE:\n\n* A BIA nunca informa prazo de conserto\n* A BIA nunca informa valores de pe\u00e7as, m\u00e3o de obra ou estimativas de reparo\n* Prazo e valor somente ap\u00f3s avalia\u00e7\u00e3o presencial\n\n\u2550\u2550\u2550 QUANDO N\u00c3O ATENDER / INDICAR PARCEIROS \u2550\u2550\u2550\n\nTV, microondas e eletrodom\u00e9sticos:\n\nMichel:\n(14) 99841-3286\n\nBany:\n(14) 99113-9324\n\n\u2550\u2550\u2550 DESBLOQUEIO iCLOUD / CONTA GOOGLE \u2550\u2550\u2550\n\n* T\u00e9cnico avalia caso a caso\n* Atendimento somente presencial\n* A BIA n\u00e3o promete desbloqueio\n* A BIA n\u00e3o informa percentual de sucesso\n* A BIA n\u00e3o confirma se \u00e9 poss\u00edvel antes da avalia\u00e7\u00e3o\n\n\u2550\u2550\u2550 ENTREGA \u2550\u2550\u2550\n\nCerqueira C\u00e9sar:\n\n* Faz entrega na cidade\n* Taxa confirmada pelo atendente\n\nOutras cidades:\n\n* Faz envio conforme log\u00edstica\n* Frete e condi\u00e7\u00f5es confirmados pelo atendente\n\n\u2550\u2550\u2550 NOTA FISCAL \u2550\u2550\u2550\n\n* A loja emite nota fiscal quando o cliente pede\n* Atendente envia PDF se solicitado\n\n\u2550\u2550\u2550 RESERVA DE PRODUTO \u2550\u2550\u2550\n\n* Atendente confirma caso a caso\n\n\u2550\u2550\u2550 LOCALIZA\u00c7\u00c3O \u2550\u2550\u2550\n\nEstamos na Av. Jos\u00e9 Joaquim Esteves, 165 \u2014 Centro \u2014 Cerqueira C\u00e9sar/SP.\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nINSTRU\u00c7\u00d5ES PARA A BIA\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nPARCELAMENTO iPHONE:\n\u201cParcela em at\u00e9 12x no cart\u00e3o, mas tem juros da m\u00e1quina, mesmo em 1x. \u00c0 vista no PIX ou dinheiro tem 5% OFF \ud83d\ude0a\u201d\n\nDESCONTO \u00c0 VISTA iPHONE:\n\u201cNo PIX ou dinheiro \u00e0 vista tem 5% OFF \ud83d\ude0a\u201d\n\nCART\u00c3O iPHONE:\n\u201cAceita sim. Mas como tem juros da m\u00e1quina, o valor final o atendente passa pra voc\u00ea \ud83d\ude0a\u201d\n\nPAGAMENTO OUTROS PRODUTOS:\n\u201cTrabalhamos com PIX, dinheiro, d\u00e9bito e cart\u00e3o de cr\u00e9dito. Em outros produtos, parcelamos em at\u00e9 12x sem juros \ud83d\udc4d\u201d\n\nCLIENTE PERGUNTA SOBRE BOLETO:\n\u201cNo momento trabalhamos com PIX, dinheiro, d\u00e9bito e cart\u00e3o de cr\u00e9dito \ud83d\ude0a\u201d\n\nCLIENTE QUER VENDER USADO PARA A LOJA:\n\u201cA gente n\u00e3o compra aparelho usado, viu? Mas se voc\u00ea quer trocar por um iPhone novo daqui, aceitamos iPhone 11 ou superior como entrada, mediante avalia\u00e7\u00e3o \ud83d\ude0a\u201d\n\nASSIST\u00caNCIA DE TV / MICROONDAS / ELETRO:\n\u201cEsse tipo de aparelho a gente n\u00e3o atende aqui, mas posso indicar t\u00e9cnicos de confian\u00e7a em Cerqueira C\u00e9sar \ud83d\ude0a\n\n\ud83d\udc68\u200d\ud83d\udd27 Michel: (14) 99841-3286\n\ud83d\udc68\u200d\ud83d\udd27 Bany: (14) 99113-9324\n\nOs dois trabalham com TV, microondas e eletro.\u201d\n\nAGENDAMENTO ASSIST\u00caNCIA:\n\u201cA gente trabalha por ordem de chegada, sem agendamento. Pode passar aqui no hor\u00e1rio de funcionamento que atendemos \ud83d\ude0a\u201d\n\nOR\u00c7AMENTO POR FOTO:\n\u201cO or\u00e7amento aqui \u00e9 gratuito, mas s\u00f3 presencial, viu? O t\u00e9cnico precisa avaliar o aparelho pra te passar o valor certinho. Pode passar aqui sem compromisso \ud83d\ude0a\u201d\n\nSTATUS DE CONSERTO:\n\u201cPra ver status do conserto, melhor passar aqui na loja ou ligar no (14) 99606-1006 que o pessoal te informa \ud83d\udc4d\u201d\n\nLOCALIZA\u00c7\u00c3O:\n\u201cEstamos na Av. Jos\u00e9 Joaquim Esteves, 165, no Centro de Cerqueira C\u00e9sar \ud83d\ude0a\u201d\n\nPRE\u00c7OS E ESTOQUE:\n\n* A BIA nunca inventa pre\u00e7o\n* A BIA nunca confirma estoque\n* A BIA nunca inventa promo\u00e7\u00e3o\n* A BIA nunca informa parcela final de iPhone no cart\u00e3o\n* Quando o cliente pedir valor ou disponibilidade, encaminhar para o atendente\n\nRESPOSTA PADR\u00c3O:\n\u201cVou pedir para um atendente confirmar o valor e a disponibilidade pra voc\u00ea \ud83d\ude0a\u201d",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "62296203-6792-4aa8-8a4f-be766ba7b07c",
+            "name": "Politicas",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -96,
+                192
+            ]
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "prod-content",
+                            "name": "conteudo",
+                            "value": "=PORTF\u00d3LIO DE PRODUTOS \u2014 TEKNOS ASSIST\u00caNCIA\n\n\u2550\u2550\u2550 CELULARES \u2550\u2550\u2550\nPRINCIPAIS (foco da loja):\n- Apple (iPhone): novos lacrados E seminovos (linha 13 at\u00e9 17 Pro Max)\n- Xiaomi / Redmi / POCO: apenas novos\n\nCASOS ESPEC\u00cdFICOS (atendente confirma):\n- Samsung, Motorola, outras marcas Android: a loja trabalha em situa\u00e7\u00f5es pontuais\n- Bia N\u00c3O nega direto \u2014 passa pra atendente confirmar\n\n\u2550\u2550\u2550 COMPUTADORES \u2550\u2550\u2550\n- MacBook: novos (Air M5, Pro M5) e seminovos (M1, Pro i5)\n- Notebooks/desktops Windows: N\u00c3O vende (mas FAZ assist\u00eancia t\u00e9cnica)\n\n\u2550\u2550\u2550 SMARTWATCH \u2550\u2550\u2550\n- Apple Watch (novo e seminovo)\n- Xiaomi / Redmi Watch\n- Outras marcas: atendente confirma\n\n\u2550\u2550\u2550 ACESS\u00d3RIOS \u2550\u2550\u2550\n- Capinhas, pel\u00edculas, cabos, carregadores\n- Fones Bluetooth\n- Suportes\n- Outros itens: atendente confirma\n- Sempre que vende iPhone \u2192 kit prote\u00e7\u00e3o GR\u00c1TIS\n\n\u2550\u2550\u2550 PERFUMES \u2550\u2550\u2550\n- Perfumes \u00e1rabes originais importados (Lattafa, Afnan, Al Haramain, Maison Alhambra, Armaf, Rasasi, Khadlaj)\n- Reserva pelo WhatsApp + retirada presencial\n- Consulta de notas: fragrantica.com.br\n\n\u2550\u2550\u2550 SERVI\u00c7OS \u2550\u2550\u2550\n- Assist\u00eancia t\u00e9cnica: celular, notebook, computador\n- N\u00c3O atende: TV, videogame, tablet (n\u00e3o-Apple), eletrodom\u00e9stico, microondas\n- iPad: caso a caso (atendente confirma)\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nINSTRU\u00c7\u00d5ES PARA A BIA\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nCELULAR DE OUTRA MARCA (Samsung/Motorola/etc):\nNUNCA responder \"n\u00e3o temos\". Use:\n\"A gente foca em iPhone e Xiaomi, mas em alguns casos espec\u00edficos a gente consegue trabalhar com outras marcas tamb\u00e9m \ud83d\ude0a Deixa eu passar pro atendente confirmar se a gente tem esse modelo pra voc\u00ea?\"\n\n\"VOC\u00caS VENDEM O QU\u00ca?\":\nResumo natural, sem listar tudo de uma vez:\n\"A gente trabalha com iPhone (novos e seminovos), Xiaomi/Redmi/POCO, MacBook, Apple Watch, perfumes \u00e1rabes importados, acess\u00f3rios e fazemos assist\u00eancia t\u00e9cnica de celular/notebook/computador \ud83d\udc4d Tem algo espec\u00edfico que voc\u00ea t\u00e1 procurando?\"\n\nFONE BLUETOOTH:\n\"Temos sim \ud83d\ude0a quer alguma marca/modelo espec\u00edfico, ou prefere indica\u00e7\u00e3o?\" (triagem leve + handoff)\n\nNOTEBOOK WINDOWS / DESKTOP:\n\"Pra venda a gente trabalha s\u00f3 com MacBook, mas FAZEMOS assist\u00eancia t\u00e9cnica de notebook e computador \ud83d\udc4d \u00c9 pra comprar ou pra consertar?\"\n\nTV / VIDEOGAME / ELETRO:\nIndicar parceiros (Michel/Bany - veja se\u00e7\u00e3o politicas)",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "560c1677-1f0d-4751-aa08-5f8db61e062a",
+            "name": "Produtos Geral",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -96,
+                384
+            ]
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "cult-content",
+                            "name": "conteudo",
+                            "value": "=SOBRE A TEKNOS \u2014 CULTURA E HIST\u00d3RIA\n\n\u2550\u2550\u2550 FUNDA\u00c7\u00c3O E TRAJET\u00d3RIA \u2550\u2550\u2550\n- Fundador: Daniel\n- Ano de funda\u00e7\u00e3o em Cerqueira C\u00e9sar: 2004\n- In\u00edcio: lan house (2004)\n- Transi\u00e7\u00e3o pra Teknos Assist\u00eancia: 2008\n- Foco original: computadores\n- Foco atual: celulares (Apple, Xiaomi), MacBook, perfumes \u00e1rabes, assist\u00eancia t\u00e9cnica\n- Mais de 20 anos atendendo a regi\u00e3o\n\n\u2550\u2550\u2550 DIFERENCIAIS \u2550\u2550\u2550\n- Atendimento humano e personalizado (cliente \u00e9 tratado pelo nome, n\u00e3o por protocolo)\n- Loja f\u00edsica presencial \u2014 n\u00e3o \u00e9 vendedor virtual\n- Conhecimento t\u00e9cnico de longa data (mais de 20 anos consertando aparelho)\n- Garantia diferenciada: 1 ano Apple + 6 meses loja em iPhone novo\n- Avalia\u00e7\u00e3o de assist\u00eancia GRATUITA, sem compromisso\n- Nota fiscal no nome do cliente\n- Kit prote\u00e7\u00e3o gr\u00e1tis na compra de iPhone\n\n\u2550\u2550\u2550 REDES SOCIAIS \u2550\u2550\u2550\n- Instagram: @teknosassistencia\n- Facebook: @teknosassistencia\n- TikTok: @teknosassistencia\n- Google Meu Neg\u00f3cio (avalia\u00e7\u00f5es)\n- WhatsApp: (14) 99606-1006\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nINSTRU\u00c7\u00d5ES PARA A BIA\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nTEMPO DE MERCADO / CONFIABILIDADE:\n\"A gente t\u00e1 em Cerqueira C\u00e9sar desde 2004 \u2014 o Daniel, dono daqui, come\u00e7ou com lan house e em 2008 a loja virou Teknos Assist\u00eancia. S\u00e3o mais de 20 anos atendendo a regi\u00e3o, primeiro com computadores e depois focando em celulares \ud83d\ude0a\"\n\nQUEM \u00c9 O DONO:\n\"O dono \u00e9 o Daniel, que t\u00e1 \u00e0 frente da loja desde 2004. Quer que eu te passe pra ele ou pra equipe de atendimento?\"\n\nREDES SOCIAIS (todas):\n\"Pode nos seguir l\u00e1! \ud83d\udc47\n\ud83d\udcf8 Instagram: @teknosassistencia\n\ud83d\udc4d Facebook: @teknosassistencia\n\ud83c\udfb5 TikTok: @teknosassistencia\nTamb\u00e9m tem nossas avalia\u00e7\u00f5es no Google \ud83d\ude0a\"\n\nAPENAS UMA REDE (ex: \"tem Instagram?\"):\nResponder s\u00f3 essa rede, n\u00e3o despejar tudo.\n\nDESCONFIAN\u00c7A / INSEGURAN\u00c7A:\n\"Super entendo a preocupa\u00e7\u00e3o \ud83d\ude0a a Teknos t\u00e1 em Cerqueira C\u00e9sar h\u00e1 mais de 20 anos, com loja f\u00edsica na Rua Jos\u00e9 Joaquim Esteves, 165. Voc\u00ea pode ver as avalia\u00e7\u00f5es no Google ou passar aqui pessoalmente. Tudo com nota fiscal no seu nome e garantia certinha\"\n\nELOGIO / SATISFA\u00c7\u00c3O:\nAgradece naturalmente e convida a seguir nas redes:\n\"Que bom que t\u00e1 gostando! \ud83d\ude0a Se quiser acompanhar novidades, segue a gente no @teknosassistencia\"\n\nREGRA: nunca despejar TODA a hist\u00f3ria de uma vez. Cliente perguntou tempo? Fala tempo. Perguntou dono? Fala dono.",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "8a9ed0b6-b62d-4a8a-b5d3-ad97f4d240d0",
+            "name": "Cultura Historia",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -96,
+                576
+            ]
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "parc-content",
+                            "name": "conteudo",
+                            "value": "=PARCEIROS DE CONFIAN\u00c7A \u2014 TEKNOS ASSIST\u00caNCIA\n\n\u2550\u2550\u2550 QUANDO INDICAR \u2550\u2550\u2550\nCliente perguntar sobre conserto de:\n- TV (qualquer marca/tamanho)\n- Microondas\n- Eletrodom\u00e9sticos em geral (geladeira, m\u00e1quina de lavar, fog\u00e3o, etc)\n\n\u2550\u2550\u2550 PARCEIROS \u2550\u2550\u2550\nAmbos atendem TV, microondas e eletrodom\u00e9sticos em Cerqueira C\u00e9sar.\nS\u00e3o pessoas de confian\u00e7a do Daniel (dono).\n\n\ud83d\udc68\u200d\ud83d\udd27 MICHEL\n- Telefone: (14) 99841-3286\n- Cidade: Cerqueira C\u00e9sar - SP\n\n\ud83d\udc68\u200d\ud83d\udd27 BANY\n- Telefone: (14) 99113-9324\n- Cidade: Cerqueira C\u00e9sar - SP\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nINSTRU\u00c7\u00d5ES PARA A BIA\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nCONSERTO DE TV / MICROONDAS / ELETRO:\n\nResposta padr\u00e3o:\n\"Esse tipo de aparelho a gente n\u00e3o atende aqui, mas posso te indicar t\u00e9cnicos de confian\u00e7a aqui em Cerqueira C\u00e9sar \ud83d\ude0a\n\n\ud83d\udc68\u200d\ud83d\udd27 Michel: (14) 99841-3286\n\ud83d\udc68\u200d\ud83d\udd27 Bany: (14) 99113-9324\n\nOs dois trabalham com TV, microondas e eletrodom\u00e9stico. S\u00e3o pessoal de confian\u00e7a que a gente indica h\u00e1 tempo \ud83d\udc4d\"\n\nREGRA: SEMPRE indicar os DOIS, deixando o cliente escolher.\n\nOUTRA SITUA\u00c7\u00c3O N\u00c3O COBERTA (vidraceiro, chaveiro, etc):\nN\u00c3O inventar indica\u00e7\u00e3o:\n\"Pra esse tipo de servi\u00e7o a gente n\u00e3o tem parceiro indicado, viu? Mas se quiser, posso passar pro atendente pra ver se ele conhece algu\u00e9m de confian\u00e7a \ud83d\ude0a\"\n\nTOM:\nN\u00e3o \u00e9 \"vai l\u00e1, n\u00e3o \u00e9 meu problema\".\n\u00c9 \"a gente cuida de voc\u00ea mesmo quando o servi\u00e7o n\u00e3o \u00e9 nosso\".\nFaz o cliente sair satisfeito mesmo sem comprar nada.",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "adfdf788-ceb5-4e67-a956-8b229c0c28ab",
+            "name": "Parceiros Indicacoes",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -96,
+                768
+            ]
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "perf-content",
+                            "name": "conteudo",
+                            "value": "=PERFUMES \u00c1RABES IMPORTADOS \u2014 TEKNOS\n\n\u2550\u2550\u2550 POSICIONAMENTO \u2550\u2550\u2550\nA Teknos trabalha com perfumes \u00e1rabes ORIGINAIS importados \u2014 N\u00c3O s\u00e3o \"contratipos\", \"inspira\u00e7\u00f5es de feira\" ou c\u00f3pias nacionais. S\u00e3o fragr\u00e2ncias originais das pr\u00f3prias marcas \u00e1rabes, que competem em qualidade com perfumes europeus de luxo a um pre\u00e7o acess\u00edvel.\n\n\u2550\u2550\u2550 MARCAS QUE A LOJA TRABALHA \u2550\u2550\u2550\n- Lattafa\n- Afnan\n- Al Haramain\n- Maison Alhambra\n- Armaf\n- Rasasi\n- Khadlaj\n\n\u2550\u2550\u2550 VARIEDADE \u2550\u2550\u2550\n- Linha masculina\n- Linha feminina\n- Linha unissex\n\n\u2550\u2550\u2550 TAMANHOS \u2550\u2550\u2550\n- Frascos variados: 50ml, 100ml e outros\n- Amostras/decants (5-10ml) dispon\u00edveis pra cliente experimentar antes da compra\n\n\u2550\u2550\u2550 FAIXA DE PRE\u00c7O \u2550\u2550\u2550\nIntermedi\u00e1ria: R$ 200-400 (atendente confirma valor exato)\n\n\u2550\u2550\u2550 TRIAGEM (perguntas pra Bia fazer) \u2550\u2550\u2550\n1. Prefer\u00eancia olfativa: madeiroso/oud, doce/floral, ou c\u00edtrico/fresco\n2. Uso pr\u00f3prio ou presente\n3. (Opcional) Tem algum perfume famoso que gosta? Indica\u00e7\u00e3o por similaridade.\n\n\u2550\u2550\u2550 INDICA\u00c7\u00c3O POR SIMILARIDADE \u2550\u2550\u2550\nA Teknos consegue indicar perfumes baseados em fragr\u00e2ncias famosas (ex: cliente cita Sauvage, Bleu de Chanel, La Vie Est Belle \u2014 a loja indica similar \u00e1rabe).\nBia N\u00c3O faz isso de cabe\u00e7a \u2014 passa pro atendente.\n\n\u2550\u2550\u2550 CONSULTA DE NOTAS OLFATIVAS \u2550\u2550\u2550\n- Site de refer\u00eancia: https://www.fragrantica.com.br/\n- Bia indica esse site quando cliente pergunta nota espec\u00edfica\n\n\u2550\u2550\u2550 RESERVA \u2550\u2550\u2550\n- Reserva via WhatsApp: atendente confirma disponibilidade e processo\n- Retirada presencial na loja\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nINSTRU\u00c7\u00d5ES PARA A BIA\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\n\"TEM PERFUME?\" / \"VENDEM PERFUME?\":\n\"Temos sim! \ud83d\ude0a Trabalhamos com perfumes \u00e1rabes originais importados (Lattafa, Afnan, Al Haramain e outras marcas top). \u00c9 pra voc\u00ea ou presente?\"\n\nCLIENTE VAGO (\"quero um perfume bom\"):\nTRIAGEM (UMA pergunta por vez):\n1\u00aa: \"\u00c9 pra voc\u00ea ou pra presente?\"\n2\u00aa: \"Tem alguma prefer\u00eancia? Mais amadeirado/marcante, mais doce/floral, ou mais c\u00edtrico/fresco?\"\n3\u00aa (se ainda sem dire\u00e7\u00e3o): \"Tem algum perfume famoso que voc\u00ea gosta? Posso indicar um similar \ud83d\ude0a\"\n\nCLIENTE CITA PERFUME FAMOSO (\"parecido com Sauvage?\"):\n\"Boa! \ud83d\ude0a A gente tem op\u00e7\u00f5es \u00e1rabes com perfil parecido com [perfume citado]. Deixa eu passar pro atendente que ele te mostra as op\u00e7\u00f5es com cheiro e pre\u00e7o certinho \ud83d\udc4d\"\n\nPERGUNTA NOTAS / ACORDES / \"QUE CHEIRO TEM\":\n\"Boa pergunta! \ud83d\ude0a As notas exatas o atendente confirma com a fragr\u00e2ncia em m\u00e3os. Ou voc\u00ea pode dar uma olhada no fragrantica.com.br \u2014 l\u00e1 tem descri\u00e7\u00e3o detalhada de cada perfume\"\n\nPRE\u00c7O:\n\"A faixa dos perfumes \u00e1rabes fica entre R$ 200 e R$ 400 dependendo do modelo e tamanho do frasco. Tem 50ml, 100ml e outros tamanhos. O atendente te passa o valor exato do que voc\u00ea escolher \ud83d\ude0a\"\n\nTESTAR ANTES:\n\"Tranquilo! A gente tem amostras/decants menorzinhos (5-10ml) pra voc\u00ea experimentar antes de comprar o frasco grande \ud83d\udc4d Vem aqui na loja que o pessoal te mostra\"\n\n\"\u00c9 CONTRATIPO? \u00c9 TIPO O DE FEIRA?\":\n\"N\u00c3O! \ud83d\ude0a Esses s\u00e3o originais \u00e1rabes mesmo \u2014 das pr\u00f3prias marcas tipo Lattafa, Afnan, Al Haramain. N\u00e3o \u00e9 c\u00f3pia nem 'inspira\u00e7\u00e3o nacional', \u00e9 o perfume \u00e1rabe verdadeiro, importado. A qualidade \u00e9 compar\u00e1vel a perfume europeu, s\u00f3 que mais acess\u00edvel\"\n\nRESERVA:\n\"Show, d\u00e1 pra reservar \ud83d\ude0a Deixa eu passar pro atendente que ele te confirma disponibilidade e como funciona certinho a retirada\"\n\nREGRA: depois de 2-3 perguntas de triagem, sempre passar pro atendente pra confirmar disponibilidade e fechar.",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "ad7d1f59-b2eb-4e0d-b07a-d1d650178067",
+            "name": "Perfumes Detalhe",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -96,
+                960
+            ]
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "cert-content",
+                            "name": "conteudo",
+                            "value": "=CREDENCIAIS E FORMALIZA\u00c7\u00c3O \u2014 TEKNOS ASSIST\u00caNCIA\n\n\u2550\u2550\u2550 FORMALIZA\u00c7\u00c3O LEGAL \u2550\u2550\u2550\n- CNPJ regular\n- Alvar\u00e1 de funcionamento\n- Emiss\u00e3o de nota fiscal em todas as vendas (PDF mediante solicita\u00e7\u00e3o)\n- Sediada fisicamente em Cerqueira C\u00e9sar - SP desde 2004\n\n\u2550\u2550\u2550 CAPACITA\u00c7\u00c3O T\u00c9CNICA \u2550\u2550\u2550\n- T\u00e9cnico certificado em manuten\u00e7\u00e3o (cursos espec\u00edficos da \u00e1rea)\n- Mais de 20 anos de experi\u00eancia em assist\u00eancia t\u00e9cnica (Daniel, dono, atua na \u00e1rea desde 2004)\n- Trajet\u00f3ria s\u00f3lida: come\u00e7ou com computadores, expandiu pra celulares\n\n\u2550\u2550\u2550 IMPORTANTE \u2014 O QUE A TEKNOS N\u00c3O \u00c9 \u2550\u2550\u2550\nA Teknos N\u00c3O \u00e9:\n- Autorizada oficial Apple\n- Autorizada oficial Xiaomi\n- Centro de servi\u00e7o autorizado de marca\n\nA Teknos \u00c9:\n- Loja independente especializada em iPhone e Xiaomi\n- Assist\u00eancia t\u00e9cnica certificada e experiente\n- Neg\u00f3cio local consolidado de mais de 20 anos\n- Empresa formalizada com CNPJ, alvar\u00e1 e nota fiscal\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nINSTRU\u00c7\u00d5ES PARA A BIA\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\n\"VOC\u00caS S\u00c3O AUTORIZADOS APPLE?\":\nSEJA HONESTA, mas valorize o que tem:\n\"A gente n\u00e3o \u00e9 autorizada oficial Apple, viu? Mas trabalhamos com iPhone h\u00e1 muito tempo, com t\u00e9cnico capacitado, garantia de 1 ano Apple + 6 meses loja e nota fiscal no seu nome \ud83d\ude0a A loja tem mais de 20 anos em Cerqueira C\u00e9sar\"\n\n\"VOC\u00caS S\u00c3O AUTORIZADOS XIAOMI?\":\n\"N\u00e3o somos autorizada oficial Xiaomi, mas trabalhamos com a marca normalmente, com garantia de 1 ano. A gente t\u00e1 h\u00e1 mais de 20 anos no mercado, \u00e9 loja consolidada \ud83d\udc4d\"\n\n\"T\u00caM CNPJ?\" / \"S\u00c3O REGISTRADOS?\":\n\"Sim, somos empresa formal \u2014 CNPJ regular, alvar\u00e1 e emitimos nota fiscal em todas as vendas (no seu nome) \ud83d\ude0a Loja f\u00edsica aqui em Cerqueira C\u00e9sar desde 2004\"\n\n\"O T\u00c9CNICO \u00c9 CERTIFICADO?\":\n\"O t\u00e9cnico tem cursos de manuten\u00e7\u00e3o e mais de 20 anos de experi\u00eancia na \u00e1rea \ud83d\udc4d A gente trabalha com celular, notebook e computador desde 2004\"\n\nDESCONFIAN\u00c7A (\"E SE FECHAR?\" / \"COMO HONRAR GARANTIA?\"):\n\"Super entendo a preocupa\u00e7\u00e3o \ud83d\ude0a a Teknos t\u00e1 em Cerqueira C\u00e9sar h\u00e1 mais de 20 anos, com loja f\u00edsica, CNPJ e nota fiscal. Voc\u00ea pode passar aqui pessoalmente ou ver as avalia\u00e7\u00f5es no Google. A garantia t\u00e1 tudo certinho na NF no seu nome\"\n\nREGRA DE OURO \u2014 HONESTIDADE:\nNUNCA diga que \u00e9 autorizada Apple ou Xiaomi (porque n\u00e3o \u00e9).\nSEMPRE valorize os argumentos REAIS: tempo de mercado, CNPJ, NF, garantia, loja f\u00edsica, t\u00e9cnico com cursos.\n\nA honestidade \u00e9 o que constr\u00f3i confian\u00e7a real. Cliente que descobre depois que \"autorizada\" era mentira nunca mais volta.",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "ea0c9aab-5575-4279-ac43-cbdfb7732cdf",
+            "name": "Certificacoes Credenciais",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -96,
+                1152
+            ]
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "atend-content",
+                            "name": "conteudo",
+                            "value": "=CANAIS DE ATENDIMENTO \u2014 TEKNOS ASSIST\u00caNCIA\n\n\u2550\u2550\u2550 TELEFONE / WHATSAPP \u2550\u2550\u2550\n- N\u00famero \u00fanico: (14) 99606-1006\n- Mesma linha pra liga\u00e7\u00e3o e WhatsApp\n- Hor\u00e1rio de atendimento: igual ao funcionamento da loja\n  \u2022 Seg-sex: 9h \u00e0s 18h\n  \u2022 S\u00e1bado: 9h \u00e0s 17h\n  \u2022 Domingo: fechado\n\n\u2550\u2550\u2550 WHATSAPP COMERCIAL \u2550\u2550\u2550\n- Atendimento automatizado pela Bia (triagem inteligente)\n- Handoff pra equipe humana quando necess\u00e1rio\n\n\u2550\u2550\u2550 REDES SOCIAIS \u2550\u2550\u2550\n- Instagram: @teknosassistencia\n- Facebook: @teknosassistencia\n- TikTok: @teknosassistencia\n- Google Meu Neg\u00f3cio (avalia\u00e7\u00f5es)\n\n\u2550\u2550\u2550 ATENDIMENTO PRESENCIAL \u2550\u2550\u2550\n- Rua Jos\u00e9 Joaquim Esteves, 165, Cerqueira C\u00e9sar - SP\n- Ordem de chegada (sem agendamento)\n- Equipe de atendimento na loja\n\n\u2550\u2550\u2550 STATUS DE CONSERTO \u2550\u2550\u2550\nPra acompanhar conserto em andamento:\n- Presencialmente na loja\n- Por telefone: (14) 99606-1006\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nINSTRU\u00c7\u00d5ES PARA A BIA\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\n\"OUTRO CONTATO?\" / \"COMO FALAR COM VOC\u00caS?\":\n\"A gente atende por aqui no WhatsApp (voc\u00ea j\u00e1 t\u00e1 conversando com a Bia \ud83d\ude0a), por telefone no (14) 99606-1006 (mesmo n\u00famero), ou presencialmente na loja: Rua Jos\u00e9 Joaquim Esteves, 165 em Cerqueira C\u00e9sar\"\n\n\"TEM SITE?\":\n\"A gente n\u00e3o tem site pr\u00f3prio agora, mas t\u00e1 tudo nas redes:\n\ud83d\udcf8 Instagram: @teknosassistencia\n\ud83d\udc4d Facebook: @teknosassistencia\n\ud83c\udfb5 TikTok: @teknosassistencia\nOu aqui mesmo pelo WhatsApp \ud83d\ude0a\"\n\n\"TEM COMO LIGAR?\":\n\"Pode ligar sim! (14) 99606-1006 \u2014 \u00e9 o mesmo n\u00famero do WhatsApp, durante hor\u00e1rio comercial (seg-sex 9h-18h, s\u00e1b 9h-17h)\"\n\n\"QUERO FALAR COM ALGU\u00c9M ESPEC\u00cdFICO\" / \"TEM ATENDENTE?\":\n\"Aqui qualquer um da equipe te atende com cuidado \ud83d\ude0a deixa eu passar pra eles te chamarem\"\n\nSTATUS DE CONSERTO:\n\"Pra ver o andamento do conserto, melhor passar aqui na loja ou ligar no (14) 99606-1006 que o pessoal te informa direitinho \ud83d\udc4d\"\n\nFORA DE HOR\u00c1RIO:\n\"A gente t\u00e1 fora do hor\u00e1rio agora, viu? Mas amanh\u00e3 (ou no pr\u00f3ximo dia \u00fatil) abrimos \u00e0s 9h e o atendente j\u00e1 te responde \ud83d\ude0a\" (faz handoff pra retomar depois)\n\nREGRA: nunca despejar TODOS os canais de uma vez. Cliente perguntou redes? Fala redes. Perguntou telefone? Fala telefone.",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "0230c94e-4f7d-4a1f-b437-02b1e77e75c4",
+            "name": "Atendimento Canais",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -96,
+                1344
+            ]
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "fb-content",
+                            "name": "conteudo",
+                            "value": "=DADOS GERAIS DA TEKNOS \u2014 RESUMO\n\n\u2550\u2550\u2550 ENDERE\u00c7O E HOR\u00c1RIO \u2550\u2550\u2550\nRua Jos\u00e9 Joaquim Esteves, 165 - Cerqueira C\u00e9sar - SP\nRefer\u00eancia: ao lado da Alquimia, pr\u00f3ximo \u00e0 Mar\u00e9\nMaps: https://maps.app.goo.gl/2zmcHwxxXbaAqTXAA\n\nSeg-sex: 9h-18h | S\u00e1b: 9h-17h | Dom: fechado\nFechado em todos feriados nacionais e municipais (01/10 Padroeira, 10/10 Anivers\u00e1rio cidade)\n\n\u2550\u2550\u2550 CONTATO \u2550\u2550\u2550\nWhatsApp/Telefone: (14) 99606-1006\nIG/FB/TikTok: @teknosassistencia\n\n\u2550\u2550\u2550 PRODUTOS \u2550\u2550\u2550\n- iPhone (novos e seminovos): 13 ao 17 Pro Max\n- Xiaomi/Redmi/POCO (novos)\n- MacBook (Air M5, Pro M5, M1 seminovo, Pro i5 seminovo)\n- Apple Watch + Xiaomi Watch\n- Perfumes \u00e1rabes ORIGINAIS (Lattafa, Afnan, Al Haramain, Maison Alhambra, Armaf, Rasasi, Khadlaj)\n- Acess\u00f3rios: capinha, pel\u00edcula, fone Bluetooth, cabo, carregador, suporte\n- Outras marcas Android: casos espec\u00edficos\n\n\u2550\u2550\u2550 SERVI\u00c7OS \u2550\u2550\u2550\n- Assist\u00eancia: celular, notebook, computador\n- N\u00c3O faz: TV, videogame, tablet n\u00e3o-Apple, eletrodom\u00e9stico, microondas\n- iPad: caso a caso\n- Ordem de chegada, sem agendamento\n- Or\u00e7amento gratuito mas s\u00f3 presencial\n- Garantia reparo: at\u00e9 3 meses\n\n\u2550\u2550\u2550 INDICAR (TV/eletro) \u2550\u2550\u2550\nMichel (14) 99841-3286\nBany (14) 99113-9324\n\n\u2550\u2550\u2550 PAGAMENTO iPHONE \u2550\u2550\u2550\n\u00c0 vista (PIX/Dinheiro): 5% OFF\nCart\u00e3o cr\u00e9dito: at\u00e9 12x mas COM JUROS da m\u00e1quina (atendente confirma valor)\nSEM boleto\n\n\u2550\u2550\u2550 PAGAMENTO OUTROS \u2550\u2550\u2550\nPIX/Dinheiro/D\u00e9bito/Cr\u00e9dito at\u00e9 10x sem juros\nBoleto: mediante an\u00e1lise\n\n\u2550\u2550\u2550 GARANTIA \u2550\u2550\u2550\niPhone novo: 1 ano Apple + 6 meses loja + NF\niPhone seminovo: 6 meses loja\nXiaomi/Android novo: 1 ano\nMacBook novo: 1 ano Apple + 6 meses loja\n\n\u2550\u2550\u2550 TROCA / USADO \u2550\u2550\u2550\n- Arrependimento: N\u00c3O\n- Troca: s\u00f3 por defeito de f\u00e1brica (comprovante + caixa)\n- A loja N\u00c3O compra usado em nenhuma hip\u00f3tese\n- Entrada de usado: S\u00d3 iPhone 11+ (valor por avalia\u00e7\u00e3o)\n\n\u2550\u2550\u2550 HIST\u00d3RIA \u2550\u2550\u2550\nFundada por Daniel em 2004 (lan house \u2192 Teknos em 2008)\nMais de 20 anos em Cerqueira C\u00e9sar\nCNPJ regular, alvar\u00e1, NF\nN\u00c3O \u00e9 autorizada oficial Apple/Xiaomi (mas \u00e9 loja consolidada e t\u00e9cnico capacitado)\n\nUSE ESTA SE\u00c7\u00c3O QUANDO:\n- Cliente faz pergunta ampla / m\u00faltipla\n- Voc\u00ea n\u00e3o sabe qual se\u00e7\u00e3o espec\u00edfica usar\n- Precisa contexto geral pra responder",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "8a7c6719-6362-463e-a5fb-94c6b2b205c2",
+            "name": "Fallback",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -96,
+                1536
+            ]
+        }
+    ],
+    "connections": {
+        "When Executed by Another Workflow": {
+            "main": [
+                [
+                    {
+                        "node": "Roteador secao",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Roteador secao": {
+            "main": [
+                [
+                    {
+                        "node": "Localizacao",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Politicas",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Produtos Geral",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Cultura Historia",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Parceiros Indicacoes",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Perfumes Detalhe",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Certificacoes Credenciais",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Atendimento Canais",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Fallback",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "binaryMode": "separate"
+    }
+}

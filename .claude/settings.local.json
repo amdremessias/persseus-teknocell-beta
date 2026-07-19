@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(curl -s --max-time 5 -o /dev/null -w \"%{http_code}\" \"https://n8n.teknoscel.shop/api/v1/workflows\")",
+      "Bash(curl -s --max-time 5 -o /dev/null -w \"%{http_code}\" \"https://n8n.teknoscel.shop/\")",
+      "Bash(curl -s --max-time 5 \"https://n8n.teknoscel.shop/rest/settings\")",
+      "Bash(curl -s --max-time 5 \"https://n8n.teknoscel.shop/healthz\")",
+      "Bash(python3 *)",
+      "Bash(cp '/Users/danielbueno/.Trash/BIA TEKNOS V2 \\(4\\).json' /Users/danielbueno/teknos-crm/n8n-workflows/workflows-exportados/bia-teknos-v2-atual.json)",
+      "Bash(cp /Users/danielbueno/.Trash/BIA_TEKNOS_V2_ATUALIZADO.json /Users/danielbueno/teknos-crm/n8n-workflows/workflows-exportados/bia-teknos-v2-atualizado.json)",
+      "Bash(cp '/Users/danielbueno/.Trash/consulta_estoque_teknos \\(1\\).json' /Users/danielbueno/teknos-crm/n8n-workflows/workflows-exportados/consulta-estoque-atual.json)",
+      "Bash(cp /Users/danielbueno/.Trash/dados_loja_teknos_atualizado_2.json /Users/danielbueno/teknos-crm/n8n-workflows/workflows-exportados/dados-loja-atual.json)",
+      "Bash(cp /Users/danielbueno/.Trash/BIA_CRMPHONE_isca_integrada.json /Users/danielbueno/teknos-crm/n8n-workflows/workflows-exportados/isca-pescador.json)",
+      "Bash(cp '/Users/danielbueno/Desktop/workflow/BIA TEKNOS V2.json' /Users/danielbueno/teknos-crm/n8n-workflows/workflows-exportados/bia-teknos-v2-atual.json)",
+      "Bash(cp /Users/danielbueno/Desktop/workflow/consulta_estoque_teknos.json /Users/danielbueno/teknos-crm/n8n-workflows/workflows-exportados/consulta-estoque-atual.json)",
+      "Bash(cp /Users/danielbueno/Desktop/workflow/dados_loja_teknos_atualizado.json /Users/danielbueno/teknos-crm/n8n-workflows/workflows-exportados/dados-loja-atual.json)",
+      "Bash(cp /Users/danielbueno/Desktop/workflow/regras_teknos.json /Users/danielbueno/teknos-crm/n8n-workflows/workflows-exportados/regras-teknos.json)",
+      "Bash(cp /Users/danielbueno/Desktop/workflow/vendas_iphone_teknos.json /Users/danielbueno/teknos-crm/n8n-workflows/workflows-exportados/vendas-iphone.json)",
+      "Bash(git *)"
+    ]
+  }
+}

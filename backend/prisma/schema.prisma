@@ -1,0 +1,339 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  nome        String
+  email       String   @unique
+  senhaHash   String   @map("senha_hash")
+  nivel       UserNivel @default(atendente)
+  ativo       Boolean  @default(true)
+  criadoEm    DateTime @default(now()) @map("criado_em")
+
+  leads             Lead[]
+  queueAssignments  QueueAssignment[]
+  notes             LeadNote[]
+  quickReplies      QuickReply[]
+  refreshTokens     RefreshToken[]
+  pushSubscriptions PushSubscription[]
+
+  @@map("users")
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("push_subscriptions")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model Lead {
+  id                String   @id @default(cuid())
+  externalId        String?  @unique @map("external_id")
+  nome              String?
+  telefone          String?
+  email             String?
+  canalOrigem       String?  @map("canal_origem")
+  canalMensagem     String?  @map("canal_mensagem")
+  fonteCampanha     String?  @map("fonte_campanha")
+  interesse         String?
+  modeloDesejado    String?  @map("modelo_desejado")
+  estadoPreferido   String?  @map("estado_preferido")
+  faixaInvestimento String?  @map("faixa_investimento")
+  vaiTrocar         Boolean? @map("vai_trocar")
+  modeloTroca       String?  @map("modelo_troca")
+  statusPipeline    String   @default("novo") @map("status_pipeline")
+  biaAtiva          Boolean  @default(true) @map("bia_ativa")
+  score             Int      @default(0)
+  atendenteId       String?  @map("atendente_id")
+  followupStage     Int      @default(0) @map("followup_stage")
+  criadoEm         DateTime @default(now()) @map("criado_em")
+  atualizadoEm     DateTime @updatedAt @map("atualizado_em")
+  observacoes       String?
+  tags              String[]
+  metadata          Json?
+  motivoPerda       String?   @map("motivo_perda")
+  dataPerda         DateTime? @map("data_perda")
+  dataArquivamento  DateTime? @map("data_arquivamento")
+
+  mercadophoneContactId      String?  @map("mercadophone_contact_id")
+  mercadophoneTicketUuid     String?  @map("mercadophone_ticket_uuid")
+  falhaDisparoSite           Boolean  @default(false) @map("falha_disparo_site")
+  falhaTemplateMeta          Boolean  @default(false) @map("falha_template_meta")
+
+  resumo          String?  @db.Text
+
+  canal           Channel  @default(whatsapp)
+  identifierCanal String?  @map("identifier_canal")
+
+  atendente        User?            @relation(fields: [atendenteId], references: [id])
+  messages         Message[]
+  queueAssignments QueueAssignment[]
+  pin              LeadPin?
+  readState        LeadReadState?
+  leadTags         LeadTag[]
+  notes            LeadNote[]
+  vendas           Venda[]
+
+  @@unique([canal, identifierCanal], name: "lead_canal_identifier_uk")
+  @@map("leads")
+}
+
+model LeadPin {
+  leadId   String   @id @map("lead_id")
+  pinnedAt DateTime @default(now()) @map("pinned_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("lead_pins")
+}
+
+model LeadReadState {
+  leadId     String   @id @map("lead_id")
+  lastReadAt DateTime @default(now()) @map("last_read_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("lead_read_state")
+}
+
+model Tag {
+  id       String   @id @default(cuid())
+  nome     String   @unique
+  cor      String   @default("#1B5E20")
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  leadTags LeadTag[]
+
+  @@map("tags")
+}
+
+model LeadTag {
+  leadId String @map("lead_id")
+  tagId  String @map("tag_id")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId],  references: [id], onDelete: Cascade)
+
+  @@id([leadId, tagId])
+  @@index([leadId])
+  @@index([tagId])
+  @@map("lead_tags")
+}
+
+model LeadNote {
+  id           String   @id @default(cuid())
+  leadId       String   @map("lead_id")
+  userId       String   @map("user_id")
+  conteudo     String
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([leadId, criadoEm(sort: Desc)])
+  @@map("lead_notes")
+}
+
+model QuickReply {
+  id       String   @id @default(cuid())
+  atalho   String
+  texto    String
+  escopo   String   @default("company")
+  userId   String?  @map("user_id")
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([atalho, userId], name: "quickreply_atalho_user_uk")
+  @@map("quick_replies")
+}
+
+model Message {
+  id                String      @id @default(cuid())
+  leadId            String      @map("lead_id")
+  tipo              MessageTipo
+  texto             String
+  canal             Channel?    @default(whatsapp)
+  deliveryStatus    String?     @map("delivery_status")
+  mediaUrl          String?     @map("media_url")
+  externalMessageId String?     @unique @map("external_message_id")
+  criadoEm          DateTime    @default(now()) @map("criado_em")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Venda {
+  id            String   @id @default(cuid())
+  leadId        String   @map("lead_id")
+  produto       String   // iphone | macbook | apple_watch | ipad | airpods | acessorio | conserto | outro
+  modelo        String?  // ex: "iPhone 15 Pro"
+  armazenamento String?  // ex: "256GB"
+  valor         Decimal? @db.Decimal(10, 2)
+  seminovo      Boolean  @default(false)
+  registradoPor String?  @map("registrado_por") // user id
+  criadoEm      DateTime @default(now()) @map("criado_em")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("vendas")
+}
+
+model Contact {
+  id       String   @id @default(cuid())
+  nome     String
+  telefone String?
+  email    String?
+  canal    String?
+  tags     String[] @default([])
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  @@map("contacts")
+}
+
+model QueueAssignment {
+  id          String    @id @default(cuid())
+  leadId      String    @map("lead_id")
+  atendenteId String    @map("atendente_id")
+  atribuidoEm DateTime  @default(now()) @map("atribuido_em")
+  assumidoEm  DateTime? @map("assumido_em")
+  timeoutEm   DateTime? @map("timeout_em")
+
+  lead      Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  atendente User @relation(fields: [atendenteId], references: [id])
+
+  @@map("queue_assignments")
+}
+
+model WebhookConfig {
+  id      String   @id @default(cuid())
+  nome    String
+  url     String
+  eventos String[]
+  secret  String?
+  ativo   Boolean  @default(true)
+
+  @@map("webhook_configs")
+}
+
+model ChannelConfig {
+  id           String   @id @default(cuid())
+  canal        Channel  @unique
+  ativo        Boolean  @default(false)
+  config       Json     @default("{}")
+  criadoEm    DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  @@map("channel_configs")
+}
+
+model WebhookEvent {
+  id        String   @id @default(cuid())
+  eventId   String   @unique @map("event_id")
+  source    String
+  canal     Channel
+  payload   Json
+  processed Boolean  @default(false)
+  erroMsg   String?  @map("erro_msg")
+  criadoEm  DateTime @default(now()) @map("criado_em")
+
+  @@map("webhook_events")
+}
+
+model Template {
+  id           String   @id @default(cuid())
+  nome         String
+  texto        String
+  variaveis    String[]
+  canal        String
+  aprovadoMeta Boolean  @default(false) @map("aprovado_meta")
+  criadoEm     DateTime @default(now()) @map("criado_em")
+
+  @@map("templates")
+}
+
+model Setting {
+  chave String @id
+  valor String
+
+  @@map("settings")
+}
+
+model IphoneStockItem {
+  id         Int      @id @default(autoincrement())
+  modelo     String
+  condicao   String
+  precoPix   Int      @map("preco_pix")
+  observacao String?
+  ativo      Boolean  @default(true)
+  ordem      Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([modelo, condicao], name: "iphone_stock_modelo_condicao_uk")
+  @@map("iphone_stock_items")
+}
+
+model ConfigTaxasMaquininha {
+  id        String   @id @default("default")
+  taxas     Json
+  updatedBy String?  @map("updated_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("config_taxas_maquininha")
+}
+
+model ConfigAvaliacaoIphone {
+  id        String   @id @default("default")
+  tabela    Json
+  updatedBy String?  @map("updated_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("config_avaliacao_iphone")
+}
+
+enum Channel {
+  whatsapp
+  instagram
+  messenger
+  telegram
+  tiktok
+}
+
+enum UserNivel {
+  admin
+  supervisor
+  atendente
+}
+
+enum MessageTipo {
+  cliente
+  bia
+  atendente
+  interno
+}

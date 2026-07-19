@@ -1,0 +1,14 @@
+{
+  "name": "Teknos CRM",
+  "short_name": "Teknos",
+  "description": "Sistema omnichannel de atendimento com IA",
+  "start_url": "/chats",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#16a34a",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" },
+    { "src": "/apple-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

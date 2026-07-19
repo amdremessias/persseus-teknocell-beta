@@ -1,0 +1,15 @@
+{
+  "acao": "from_internal",
+  "fromMe": false,
+  "chamadoId": 40583,
+  "sender": "5514991664662",
+  "contact": {
+    "name": "Cliente Teste",
+    "number": "5514991664662"
+  },
+  "mensagem": {
+    "wid": "wamid.HBgNNTUxNDk5MTY2NDY2MhUCABIYFDNCQUY2Q0RFREFCMUNEQjRDOEE4AA==",
+    "body": "oi bom diaaa",
+    "tipo": "texto"
+  }
+}

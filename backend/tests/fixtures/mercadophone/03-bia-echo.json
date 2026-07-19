@@ -1,0 +1,12 @@
+{
+  "acao": "from_internal",
+  "fromMe": true,
+  "userId": null,
+  "chamadoId": 40583,
+  "sender": "5514991664662",
+  "mensagem": {
+    "wid": "wamid.HBgNNTUxNDk5MTY2NDY2MhUCABEYEjI4QUZBMkI2M0I0RTBBODc1RAA=",
+    "body": "Olá! Sou a Bia, como posso te ajudar?",
+    "tipo": "texto"
+  }
+}

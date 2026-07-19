@@ -1,0 +1,69 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import api from "@/lib/api";
+
+export interface ChatTag {
+  id: string;
+  nome: string;
+  cor: string;
+}
+
+export interface ChatLastMessage {
+  texto: string;
+  criadoEm: string;
+  tipo: string;
+  fromMe: boolean;
+}
+
+export interface ChatItem {
+  id: string;
+  nome: string | null;
+  telefone: string | null;
+  canal: string;
+  identifierCanal: string | null;
+  lastMessage: ChatLastMessage | null;
+  unreadCount: number;
+  status: "aguardando" | "bia_atendendo" | "atendente_atendendo" | "finalizado";
+  atendenteAtual: { id: string; nome: string } | null;
+  biaAtiva: boolean;
+  tags: (ChatTag | string)[];
+  pinned: boolean;
+  notesCount: number;
+}
+
+export interface UseChatsParams {
+  canal?: string;
+  atendenteId?: string;
+  tagId?: string;
+  search?: string;
+}
+
+export function useChats(params: UseChatsParams = {}, skip = false) {
+  const [items, setItems] = useState<ChatItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(!skip);
+
+  const key = JSON.stringify(params);
+
+  const fetchChats = useCallback(async () => {
+    setLoading(true);
+    try {
+      const query: Record<string, string> = {};
+      if (params.canal) query.canal = params.canal;
+      if (params.atendenteId) query.atendenteId = params.atendenteId;
+      if (params.tagId) query.tagId = params.tagId;
+      if (params.search) query.search = params.search;
+      const { data } = await api.get("/chats", { params: query });
+      setItems(data.items);
+      setTotal(data.total);
+    } finally {
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  useEffect(() => { if (!skip) fetchChats(); }, [fetchChats, skip]);
+
+  return { items, total, loading, refetch: fetchChats };
+}

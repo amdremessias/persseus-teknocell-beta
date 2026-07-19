@@ -1,0 +1,155 @@
+{
+  "name": "handoff_v1",
+  "active": false,
+  "tags": [{ "name": "BIA_V3" }, { "name": "phase2" }],
+  "settings": { "executionOrder": "v1" },
+  "versionId": "bia00003-hand-0001-0000-000000000003",
+  "meta": { "templateCredsSetupCompleted": false },
+  "nodes": [
+    {
+      "id": "stick-h001-0000-0000-000000000001",
+      "name": "📌 handoff_v1 — Phase 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-440, -60],
+      "parameters": {
+        "width": 540,
+        "height": 280,
+        "color": 6,
+        "content": "## handoff_v1 — PHASE 2 (não ativar ainda)\n\n**Propósito:**\nEncaminhar lead quente para vendedor humano disponível.\nAcionado por `bia_core_v1` quando `humano=true`.\n\n**Gatilhos de handoff:**\n- `lead_score >= 8` (intenção clara de compra)\n- Cliente pediu explicitamente para falar com humano\n- Situação fora do escopo da BIA\n- Blacklist violada → fallback automático\n\n**Endpoint:** `POST /webhook/bia-handoff`\n\n**Payload esperado:**\n```json\n{\n  \"lead_id\": \"uuid\",\n  \"handoff_reason\": \"string\",\n  \"metadata\": { \"lead_score\": 9, \"urgencia\": \"alta\" }\n}\n```"
+      }
+    },
+    {
+      "id": "stick-h002-0000-0000-000000000002",
+      "name": "🔑 Credenciais",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-440, 240],
+      "parameters": {
+        "width": 340,
+        "height": 200,
+        "color": 2,
+        "content": "## Credenciais necessárias\n\n1. **Webhook Auth** → `Header Auth`\n   - Header: `X-Bia-Secret`\n\n2. **CRM Auth** → `HTTP Header Auth`\n   - Nome: `BIA Secret - CRM`\n\n3. **TODO:** Credencial para notificação de agente\n   (WhatsApp interno, Slack, ou socket do CRM)"
+      }
+    },
+    {
+      "id": "node-h010-0000-0000-000000000010",
+      "name": "webhook_handoff",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 380],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bia-handoff",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "credentials": {
+        "headerAuth": {
+          "id": "",
+          "name": "BIA Secret - Webhook"
+        }
+      }
+    },
+    {
+      "id": "node-h011-0000-0000-000000000011",
+      "name": "responder_200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [100, 560],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"ok\": true, \"handoff\": \"queued\" }",
+        "options": { "responseCode": 200 }
+      }
+    },
+    {
+      "id": "node-h020-0000-0000-000000000020",
+      "name": "buscar_lead_crm",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [360, 380],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://crm.teknoscel.shop/api/leads/{{ ($input.item.json.body ?? $input.item.json).lead_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": { "timeout": 8000 }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "BIA Secret - CRM"
+        }
+      }
+    },
+    {
+      "id": "node-h030-0000-0000-000000000030",
+      "name": "selecionar_agente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [620, 380],
+      "parameters": {
+        "jsCode": "// STUB — Phase 2\n// Seleciona agente disponível via round-robin do CRM\n// Por ora: retorna placeholder para testes\n\nconst lead = $input.item.json;\nconst webhookBody = $('webhook_handoff').item.json.body ?? $('webhook_handoff').item.json;\n\n// TODO: chamar GET /api/queue/next-available-agent\n// e retornar o agente com menor carga atual\n\nreturn {\n  json: {\n    lead_id: webhookBody.lead_id,\n    lead_nome: lead.nome ?? 'Lead',\n    lead_telefone: lead.telefone ?? null,\n    handoff_reason: webhookBody.handoff_reason ?? 'lead_quente',\n    metadata: webhookBody.metadata ?? {},\n    agente_id: null,      // TODO: preencher com ID real do agente\n    agente_nome: null,    // TODO: preencher\n    timestamp: new Date().toISOString()\n  }\n};"
+      }
+    },
+    {
+      "id": "node-h040-0000-0000-000000000040",
+      "name": "notificar_agente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 380],
+      "parameters": {
+        "method": "POST",
+        "url": "https://crm.teknoscel.shop/api/webhooks/handoff-notify",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({ lead_id: $json.lead_id, agente_id: $json.agente_id, handoff_reason: $json.handoff_reason, metadata: $json.metadata }) }}",
+        "options": { "timeout": 8000 }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "BIA Secret - CRM"
+        }
+      }
+    },
+    {
+      "id": "stick-h003-0000-0000-000000000003",
+      "name": "⚠️ TODO Phase 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [620, 560],
+      "parameters": {
+        "width": 540,
+        "height": 220,
+        "color": 2,
+        "content": "## TODO — Phase 2\n\n**selecionar_agente:**\n- Integrar com `GET /api/queue/next-available-agent` (endpoint a criar no CRM)\n- Implementar round-robin real ou balanceamento por carga\n\n**notificar_agente:**\n- Endpoint `POST /api/webhooks/handoff-notify` não existe ainda\n- Alternativa: usar Socket.io do CRM diretamente\n- Alternativa: notificação WhatsApp interno ao vendedor\n\n**Antes de ativar:** resolver seleção de agente + canal de notificação."
+      }
+    }
+  ],
+  "connections": {
+    "webhook_handoff": {
+      "main": [
+        [
+          { "node": "responder_200", "type": "main", "index": 0 },
+          { "node": "buscar_lead_crm", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "buscar_lead_crm": {
+      "main": [
+        [{ "node": "selecionar_agente", "type": "main", "index": 0 }]
+      ]
+    },
+    "selecionar_agente": {
+      "main": [
+        [{ "node": "notificar_agente", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {}
+}

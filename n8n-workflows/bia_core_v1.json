@@ -1,0 +1,303 @@
+{
+  "name": "bia_core_v1",
+  "active": false,
+  "tags": [{ "name": "BIA_V3" }, { "name": "bia_core" }],
+  "settings": { "executionOrder": "v1" },
+  "versionId": "bia00001-core-0001-0000-000000000001",
+  "meta": { "templateCredsSetupCompleted": false },
+  "nodes": [
+    {
+      "id": "stick-0001-0000-0000-000000000001",
+      "name": "📌 BIA Core V1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-440, -60],
+      "parameters": {
+        "width": 500,
+        "height": 220,
+        "color": 4,
+        "content": "## BIA_V3 — bia_core_v1\n\n**Fluxo principal da BIA SDR.**\n\nWebhook → Normalizar → Identificar Origem → Preparar Prompt → Classificador (OpenAI) → Validar Resposta → Retorno CRM\n\n**Origens:** `whatsapp` | `lovable`\n**Endpoint:** `POST /webhook/bia-teknos`\n**Retorno:** `POST https://crm.teknoscel.shop/api/webhooks/bia-response`"
+      }
+    },
+    {
+      "id": "stick-0002-0000-0000-000000000002",
+      "name": "🔑 Credenciais Necessárias",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-440, 180],
+      "parameters": {
+        "width": 500,
+        "height": 240,
+        "color": 2,
+        "content": "## Credenciais para configurar antes de ativar\n\n1. **Webhook Auth** → `Header Auth`\n   - Header: `X-Bia-Secret`\n   - Valor: copiar de `BIA_SECRET` no `.env` do backend\n\n2. **OpenAI** → `openAiApi`\n   - Nome sugerido: `OpenAI - TeknosCel`\n   - Modelo: `gpt-4o-mini`\n\n3. **CRM Auth** → `HTTP Header Auth`\n   - Nome sugerido: `BIA Secret - CRM`\n   - Header: `X-Bia-Secret` (mesmo valor do item 1)"
+      }
+    },
+    {
+      "id": "stick-0003-0000-0000-000000000003",
+      "name": "⛔ Regras Imutáveis",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-440, 440],
+      "parameters": {
+        "width": 500,
+        "height": 280,
+        "color": 3,
+        "content": "## Regras que NUNCA podem ser violadas\n\nO nó `resposta_bia` aplica blacklist automática.\nSe Claude violar qualquer uma, a resposta é substituída por fallback seguro.\n\n**Blacklist:**\n- em estoque / disponível / tenho aqui\n- saúde da bateria / bateria está / capacidade da bateria\n- desconto / promoção especial / condição especial\n- reservado / posso reservar / vou reservar\n- garanto / confirmo disponibilidade\n\n**Fallback seguro:**\n> \"Nosso time de vendas tem todas as informações atualizadas. Posso te conectar com eles agora?\""
+      }
+    },
+    {
+      "id": "node-0010-0000-0000-000000000010",
+      "name": "webhook_entrada",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 380],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bia-teknos",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "credentials": {
+        "headerAuth": {
+          "id": "",
+          "name": "BIA Secret - Webhook"
+        }
+      }
+    },
+    {
+      "id": "node-0011-0000-0000-000000000011",
+      "name": "responder_200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [100, 580],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"ok\": true }",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "node-0020-0000-0000-000000000020",
+      "name": "normalizar_entrada",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [360, 380],
+      "parameters": {
+        "jsCode": "const raw = $input.item.json.body ?? $input.item.json;\n\nconst origemMap = {\n  whatsapp: 'whatsapp',\n  lovable: 'lovable',\n  instagram: 'instagram_futuro',\n  loja: 'atendimento_loja'\n};\nconst origem_lead = origemMap[raw.canal] ?? 'whatsapp';\n\nconst history = (raw.contexto ?? [])\n  .filter(m => m.tipo !== 'interno')\n  .slice(-10)\n  .map(m => ({\n    role: m.tipo === 'cliente' ? 'cliente' : m.tipo === 'bia' ? 'bia' : 'atendente',\n    text: m.texto,\n    at: m.criadoEm\n  }));\n\nconst is_first_contact = history.filter(m => m.role === 'cliente').length <= 1;\n\nlet pre_qualified = { uso_principal: null, orcamento: null, estado: null, prioridade: null };\nif (origem_lead === 'lovable') {\n  try {\n    const pq = JSON.parse(raw.mensagemCliente);\n    pre_qualified = {\n      uso_principal: pq.uso_principal ?? null,\n      orcamento: pq.orcamento ?? null,\n      estado: pq.estado ?? null,\n      prioridade: pq.prioridade ?? null\n    };\n  } catch (_) {}\n}\n\nreturn {\n  json: {\n    lead_id: raw.leadId,\n    lead_nome: raw.leadNome ?? null,\n    origem_lead,\n    current_message: raw.mensagemCliente,\n    resumo: raw.resumo ?? null,\n    is_first_contact,\n    history,\n    pre_qualified\n  }\n};"
+      }
+    },
+    {
+      "id": "node-0030-0000-0000-000000000030",
+      "name": "identificar_origem",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [620, 380],
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "conditions": [
+                  {
+                    "id": "cond-lovable",
+                    "leftValue": "={{ $json.origem_lead }}",
+                    "rightValue": "lovable",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "lovable"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "whatsapp"
+        }
+      }
+    },
+    {
+      "id": "node-0040-0000-0000-000000000040",
+      "name": "preparar_prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 380],
+      "parameters": {
+        "jsCode": "const j = $input.item.json;\n\nconst hist = (j.history ?? [])\n  .map(m => `[${m.role}]: ${m.text}`)\n  .join('\\n') || '(sem histórico)';\n\nconst pqLines = j.origem_lead === 'lovable'\n  ? `Uso principal: ${j.pre_qualified.uso_principal ?? '-'}\\nOrçamento: ${j.pre_qualified.orcamento ?? '-'}\\nEstado: ${j.pre_qualified.estado ?? '-'}\\nPrioridade: ${j.pre_qualified.prioridade ?? '-'}`\n  : 'N/A (lead whatsapp — coletar durante conversa)';\n\nconst prompt = [\n  `ORIGEM: ${j.origem_lead}`,\n  `LEAD: ${j.lead_nome ?? 'não identificado'}`,\n  `PRIMEIRO CONTATO: ${j.is_first_contact ? 'sim' : 'não'}`,\n  `RESUMO ANTERIOR: ${j.resumo ?? 'nenhum'}`,\n  '',\n  'HISTÓRICO (últimas 10 msgs):',\n  hist,\n  '',\n  'PRÉ-QUALIFICAÇÃO:',\n  pqLines,\n  '',\n  'MENSAGEM ATUAL DO CLIENTE:',\n  j.current_message\n].join('\\n');\n\nreturn {\n  json: {\n    ...j,\n    prompt\n  }\n};"
+      }
+    },
+    {
+      "id": "node-0050-0000-0000-000000000050",
+      "name": "openai_model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.1,
+      "position": [1100, 560],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0.2,
+          "maxTokens": 1024,
+          "systemMessage": "Você é BIA, assistente de pré-vendas da TeknosCel — concessionária especializada em iPhones.\n\nMISSÃO:\nResponder rápido, gerar valor, qualificar o lead e encaminhar ao vendedor humano no momento certo. Você não fecha vendas. Você aquece e prepara o terreno.\n\nTOM: profissional, direto, acolhedor. Português brasileiro natural. Nunca robótico.\n\nSOBRE SEMINOVOS TEKNOSCEL:\n- Aparelhos revisados, garantia de 6 meses da loja, acompanham kit de proteção\n- NÃO informe: saúde da bateria, quantidade em estoque, disponibilidade específica\n\nSOBRE LACRADOS TEKNOSCEL:\n- Nota fiscal, 1 ano de garantia Apple, +6 meses adicional da loja\n\nREGRAS IMUTÁVEIS — NUNCA VIOLE:\n1. Nunca afirme disponibilidade ou estoque\n2. Nunca invente desconto, promoção ou condição especial\n3. Nunca confirme reserva\n4. Nunca informe saúde de bateria\n5. Nunca informe quantidade exata\n6. Nunca discuta com o cliente\n7. Assistência técnica: máx 2 perguntas + 1 orientação + encaminhar humano\n\nSe perguntarem sobre estoque/bateria/disponibilidade: diga que o time de vendas tem essa informação em tempo real e ofereça conexão imediata.\n\nLEADS PRÉ-QUALIFICADOS (origem = lovable):\nO cliente já informou uso, orçamento, estado e prioridade. NÃO repita essas perguntas. Vá direto ao valor: \"Com base no que você nos informou, [insight personalizado].\"\n\nFORMATO DE SAÍDA OBRIGATÓRIO — responda APENAS com JSON válido, sem texto fora do JSON:\n{\n  \"intencao\": \"produto | preco | seminovo | assistencia | troca | outro\",\n  \"complexidade\": \"simples | media | complexa\",\n  \"lead_score\": 0,\n  \"urgencia\": \"baixa | media | alta\",\n  \"humano\": false,\n  \"estado_atendimento\": \"novo | qualificando | interessado | negociando | aguardando | handoff_humano | fechado | perdido\",\n  \"resumo\": \"1 linha com o que o cliente quer e onde está na jornada\",\n  \"response_text\": \"mensagem da BIA para o cliente — texto puro, sem markdown\"\n}\n\nlead_score: 8-10 = intenção clara de compra | 5-7 = interesse real | 0-4 = curiosidade.\nhumano=true quando: lead_score >= 8 OU cliente pediu humano OU situação fora do escopo da BIA."
+        }
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI - TeknosCel"
+        }
+      }
+    },
+    {
+      "id": "node-0051-0000-0000-000000000051",
+      "name": "structured_parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [1340, 560],
+      "parameters": {
+        "schemaType": "fromJson",
+        "inputSchema": "",
+        "jsonSchemaExample": "{\"intencao\":\"seminovo\",\"complexidade\":\"simples\",\"lead_score\":7,\"urgencia\":\"media\",\"humano\":false,\"estado_atendimento\":\"qualificando\",\"resumo\":\"Cliente busca iPhone 13 seminovo até R$2500\",\"response_text\":\"Trabalhamos com iPhones seminovos revisados, todos com garantia de 6 meses da loja e kit de proteção incluso! Para te indicar a melhor opção, qual é o seu orçamento?\"}"
+      }
+    },
+    {
+      "id": "node-0052-0000-0000-000000000052",
+      "name": "classificador_bia",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [1140, 380],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}"
+      }
+    },
+    {
+      "id": "node-0060-0000-0000-000000000060",
+      "name": "resposta_bia",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1400, 380],
+      "parameters": {
+        "jsCode": "const raw = $input.item.json;\nconst classificacao = raw.output ?? raw;\nconst normalizado = $('normalizar_entrada').item.json;\n\nconst blacklist = [\n  'em estoque', 'disponível', 'temos disponível', 'tenho aqui',\n  'saúde da bateria', 'bateria está', 'capacidade da bateria',\n  'desconto', 'promoção especial', 'condição especial',\n  'reservado', 'posso reservar', 'vou reservar',\n  'garanto', 'confirmo disponibilidade'\n];\n\nlet response_text = classificacao.response_text ?? 'Nosso time de vendas pode te ajudar! Posso conectar você agora?';\nlet humano = classificacao.humano ?? false;\nlet handoff_reason = null;\n\nconst lower = response_text.toLowerCase();\nif (blacklist.some(kw => lower.includes(kw))) {\n  response_text = 'Nosso time de vendas tem todas as informações atualizadas. Posso te conectar com eles agora?';\n  humano = true;\n  handoff_reason = 'violation_blacklist';\n}\n\nreturn {\n  json: {\n    crm_payload: {\n      lead_id: normalizado.lead_id,\n      respostas: [{ texto: response_text, mediaUrl: null }],\n      metadata: {\n        intencao: classificacao.intencao ?? 'outro',\n        complexidade: classificacao.complexidade ?? 'simples',\n        lead_score: classificacao.lead_score ?? 0,\n        urgencia: classificacao.urgencia ?? 'baixa',\n        estado_atendimento: classificacao.estado_atendimento ?? 'qualificando',\n        origem_lead: normalizado.origem_lead,\n        resumo: classificacao.resumo ?? null,\n        humano,\n        handoff_reason\n      }\n    }\n  }\n};"
+      }
+    },
+    {
+      "id": "node-0070-0000-0000-000000000070",
+      "name": "retorno_crm",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1660, 380],
+      "parameters": {
+        "method": "POST",
+        "url": "https://crm.teknoscel.shop/api/webhooks/bia-response",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify($json.crm_payload) }}",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "BIA Secret - CRM"
+        }
+      }
+    },
+    {
+      "id": "stick-0004-0000-0000-000000000004",
+      "name": "🔀 Origens — Phase 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [620, 560],
+      "parameters": {
+        "width": 240,
+        "height": 160,
+        "color": 5,
+        "content": "## Switch de Origem\n\n**Output 0** → `lovable`\n**Fallback** → `whatsapp`\n\nEm Phase 2: conectar cada saída a um sub-fluxo específico por origem."
+      }
+    },
+    {
+      "id": "stick-0005-0000-0000-000000000005",
+      "name": "🤝 Handoff — Phase 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1660, 580],
+      "parameters": {
+        "width": 280,
+        "height": 180,
+        "color": 2,
+        "content": "## Handoff Phase 2\n\nQuando `humano=true`, chamar `handoff_v1`:\n\n```\nPOST /webhook/bia-handoff\n{ lead_id, metadata }\n```\n\nAdicionar nó IF após `resposta_bia` para bifurcar:\n- `humano=true` → `handoff_v1`\n- `humano=false` → fim"
+      }
+    }
+  ],
+  "connections": {
+    "webhook_entrada": {
+      "main": [
+        [
+          { "node": "responder_200", "type": "main", "index": 0 },
+          { "node": "normalizar_entrada", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "normalizar_entrada": {
+      "main": [
+        [{ "node": "identificar_origem", "type": "main", "index": 0 }]
+      ]
+    },
+    "identificar_origem": {
+      "main": [
+        [{ "node": "preparar_prompt", "type": "main", "index": 0 }],
+        [{ "node": "preparar_prompt", "type": "main", "index": 0 }]
+      ]
+    },
+    "preparar_prompt": {
+      "main": [
+        [{ "node": "classificador_bia", "type": "main", "index": 0 }]
+      ]
+    },
+    "openai_model": {
+      "ai_languageModel": [
+        [{ "node": "classificador_bia", "type": "ai_languageModel", "index": 0 }]
+      ]
+    },
+    "structured_parser": {
+      "ai_outputParser": [
+        [{ "node": "classificador_bia", "type": "ai_outputParser", "index": 0 }]
+      ]
+    },
+    "classificador_bia": {
+      "main": [
+        [{ "node": "resposta_bia", "type": "main", "index": 0 }]
+      ]
+    },
+    "resposta_bia": {
+      "main": [
+        [{ "node": "retorno_crm", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {}
+}

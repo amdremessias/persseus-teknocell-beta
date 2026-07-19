@@ -1,0 +1,137 @@
+{
+    "id": "hoeBYnp5QU9hQZiZ",
+    "name": "BIA_CRM_FULL_memoria",
+    "active": true,
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "bia-memoria",
+                "authentication": "headerAuth",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "9dd4350a-dd96-4334-9630-ce03bb6f644b",
+            "name": "webhook_memoria",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                544,
+                448
+            ],
+            "webhookId": "3c37e3cd-f7c7-4d85-88e9-4d3c96b908dc",
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "JUbUR8EugZySbckF",
+                    "name": "Header Auth account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={ \"ok\": true }",
+                "options": {
+                    "responseCode": 200
+                }
+            },
+            "id": "515919c4-9287-41cc-8bce-565740a9d35a",
+            "name": "responder_200",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                544,
+                624
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// STUB \u2014 Phase 2\n// Valida que lead_id e resumo est\u00e3o presentes\nconst raw = $input.item.json.body ?? $input.item.json;\n\nif (!raw.lead_id || !raw.resumo) {\n  throw new Error(`[memoria_v1] payload inv\u00e1lido: lead_id=${raw.lead_id} resumo=${raw.resumo}`);\n}\n\nreturn {\n  json: {\n    lead_id: raw.lead_id,\n    resumo: raw.resumo,\n    timestamp: new Date().toISOString()\n  }\n};"
+            },
+            "id": "cc0a2ac1-1a80-433b-973e-2f9560a7805b",
+            "name": "validar_payload",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                800,
+                448
+            ]
+        },
+        {
+            "parameters": {
+                "method": "PATCH",
+                "url": "=https://crm.teknoscel.shop/api/leads/{{ $json.lead_id }}/resumo",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "resumo",
+                            "value": "={{ $json.resumo }}"
+                        }
+                    ]
+                },
+                "options": {
+                    "timeout": 8000
+                }
+            },
+            "id": "1bbd8981-9737-4d7b-8859-a525a62db7a3",
+            "name": "salvar_resumo_crm",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1072,
+                448
+            ],
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "JUbUR8EugZySbckF",
+                    "name": "Header Auth account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "webhook_memoria": {
+            "main": [
+                [
+                    {
+                        "node": "responder_200",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "validar_payload",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "validar_payload": {
+            "main": [
+                [
+                    {
+                        "node": "salvar_resumo_crm",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "binaryMode": "separate"
+    }
+}

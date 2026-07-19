@@ -1,0 +1,145 @@
+{
+  "name": "followup_v1",
+  "active": false,
+  "tags": [{ "name": "BIA_V3" }, { "name": "phase2" }],
+  "settings": { "executionOrder": "v1" },
+  "versionId": "bia00004-foll-0001-0000-000000000004",
+  "meta": { "templateCredsSetupCompleted": false },
+  "nodes": [
+    {
+      "id": "stick-f001-0000-0000-000000000001",
+      "name": "📌 followup_v1 — Phase 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-440, -60],
+      "parameters": {
+        "width": 560,
+        "height": 300,
+        "color": 6,
+        "content": "## followup_v1 — PHASE 2 (não ativar ainda)\n\n**Propósito:**\nReativar leads frios/mornos que pararam de responder.\nExecuta em schedule e envia mensagem de reengajamento via BIA.\n\n**Schedule sugerido:** diariamente às 10h\n\n**Critérios de elegibilidade (a definir):**\n- `estado_atendimento = aguardando`\n- Última mensagem > 24h atrás\n- Lead não arquivado, não fechado\n\n**Fluxo:**\n1. Busca leads elegíveis no CRM\n2. Para cada lead: dispara `bia_core_v1` com mensagem de reengajamento\n3. Marca lead como `followup_enviado`\n\n**Limite de follow-ups por lead:** máx 3 tentativas antes de arquivar."
+      }
+    },
+    {
+      "id": "stick-f002-0000-0000-000000000002",
+      "name": "🔑 Credenciais",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-440, 260],
+      "parameters": {
+        "width": 340,
+        "height": 180,
+        "color": 2,
+        "content": "## Credenciais necessárias\n\n1. **CRM Auth** → `HTTP Header Auth`\n   - Nome: `BIA Secret - CRM`\n   - Header: `X-Bia-Secret`\n\n2. **BIA Webhook Auth** → `Header Auth`\n   - Nome: `BIA Secret - Webhook`\n   - Header: `X-Bia-Secret`"
+      }
+    },
+    {
+      "id": "node-f010-0000-0000-000000000010",
+      "name": "schedule_diario",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [100, 380],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10 * * 1-6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "node-f020-0000-0000-000000000020",
+      "name": "buscar_leads_aguardando",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [360, 380],
+      "parameters": {
+        "method": "GET",
+        "url": "https://crm.teknoscel.shop/api/leads?status=aguardando&followup_elegivel=true&limit=50",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": { "timeout": 10000 }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "BIA Secret - CRM"
+        }
+      }
+    },
+    {
+      "id": "node-f030-0000-0000-000000000030",
+      "name": "filtrar_e_preparar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [620, 380],
+      "parameters": {
+        "jsCode": "// STUB — Phase 2\n// Filtra leads elegíveis e prepara payloads para bia_core_v1\n\nconst leads = $input.item.json ?? [];\nconst leadArray = Array.isArray(leads) ? leads : (leads.data ?? leads.leads ?? []);\n\nif (leadArray.length === 0) {\n  console.log('[followup_v1] Nenhum lead elegível para follow-up');\n  return [];\n}\n\n// Monta payload para cada lead no formato esperado pela bia_core_v1\nconst LIMITE_FOLLOWUPS = 3;\n\nconst payloads = leadArray\n  .filter(lead => (lead.followupCount ?? 0) < LIMITE_FOLLOWUPS)\n  .map(lead => ({\n    json: {\n      leadId: lead.id,\n      leadNome: lead.nome ?? null,\n      canal: lead.canalMensagem ?? 'whatsapp',\n      mensagemCliente: 'followup_automatico',\n      resumo: lead.resumo ?? null,\n      contexto: [],\n      _followup: true,\n      _followupCount: (lead.followupCount ?? 0) + 1\n    }\n  }));\n\nconsole.log(`[followup_v1] Disparando follow-up para ${payloads.length} leads`);\nreturn payloads;"
+      }
+    },
+    {
+      "id": "node-f040-0000-0000-000000000040",
+      "name": "disparar_bia_followup",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 380],
+      "parameters": {
+        "method": "POST",
+        "url": "https://n8n.teknoscel.shop/webhook/bia-teknos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 10000,
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 3000
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "BIA Secret - Webhook"
+        }
+      }
+    },
+    {
+      "id": "stick-f003-0000-0000-000000000003",
+      "name": "⚠️ TODO Phase 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [620, 560],
+      "parameters": {
+        "width": 560,
+        "height": 260,
+        "color": 2,
+        "content": "## TODO — Phase 2\n\n**buscar_leads_aguardando:**\n- Endpoint `GET /api/leads?status=aguardando&followup_elegivel=true` não existe ainda\n- Criar no CRM: filtro por `estado_atendimento`, `ultimaMensagemEm`, `followupCount`\n\n**filtrar_e_preparar:**\n- Definir mensagem de follow-up (template por urgência/intencao?)\n- `followup_automatico` precisa ser tratado em `bia_core_v1` como trigger especial\n\n**disparar_bia_followup:**\n- Delay de 3s entre leads para não sobrecarregar n8n + CRM\n- Implementar controle de falhas (lead arquivado se 3 tentativas sem resposta)\n\n**Antes de ativar:** criar endpoints CRM + definir template de follow-up."
+      }
+    }
+  ],
+  "connections": {
+    "schedule_diario": {
+      "main": [
+        [{ "node": "buscar_leads_aguardando", "type": "main", "index": 0 }]
+      ]
+    },
+    "buscar_leads_aguardando": {
+      "main": [
+        [{ "node": "filtrar_e_preparar", "type": "main", "index": 0 }]
+      ]
+    },
+    "filtrar_e_preparar": {
+      "main": [
+        [{ "node": "disparar_bia_followup", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {}
+}

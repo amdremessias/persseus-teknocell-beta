@@ -1,0 +1,256 @@
+{
+    "id": "z8HnTWhjK125pI70",
+    "name": "BIA_CRM_FULL_vendas_xiaomi",
+    "active": true,
+    "nodes": [
+        {
+            "parameters": {
+                "workflowInputs": {
+                    "values": [
+                        {
+                            "name": "secao"
+                        }
+                    ]
+                }
+            },
+            "id": "cee6195c-1585-4335-9ffd-d286d8cdefb5",
+            "name": "When Executed by Another Workflow",
+            "type": "n8n-nodes-base.executeWorkflowTrigger",
+            "typeVersion": 1.1,
+            "position": [
+                -544,
+                304
+            ]
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 1
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.secao }}",
+                                        "rightValue": "estrategia",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "estrategia"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 1
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.secao }}",
+                                        "rightValue": "triagem",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "triagem"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 1
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.secao }}",
+                                        "rightValue": "argumentos",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "argumentos"
+                        }
+                    ]
+                },
+                "options": {
+                    "fallbackOutput": "extra",
+                    "renameFallbackOutput": "fallback"
+                }
+            },
+            "id": "185a0d4f-dbbd-44d3-abaf-52ff5ee93ae4",
+            "name": "Roteador secao",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3.2,
+            "position": [
+                -304,
+                304
+            ]
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "estrategia-content",
+                            "name": "conteudo",
+                            "value": "=ESTRAT\u00c9GIA DE VENDA \u2014 XIAOMI / REDMI / POCO\n\nOBJETIVO: Voc\u00ea N\u00c3O fecha venda de Xiaomi. Sua miss\u00e3o \u00e9 triagem inteligente para entregar o cliente ao atendente com contexto pronto.\n\nPOSICIONAMENTO DA MARCA NA TEKNOS:\n- Trabalhamos com Xiaomi novo lacrado e seminovo\n- Linha Redmi (custo-benef\u00edcio), POCO (gamer/performance), Xiaomi (premium)\n- Garantia: novo lacrado = 1 ano + 6 meses loja | seminovo = 6 meses loja\n- Nota fiscal no nome do cliente\n\n\u26a0\ufe0f REGRA CR\u00cdTICA DE TROCA (NUNCA invente):\n- A loja S\u00d3 aceita iPhone do iPhone 11 em diante como entrada/troca\n- Outras marcas (Xiaomi, Samsung, Motorola, Realme etc) N\u00c3O s\u00e3o aceitas na troca, NEM MESMO se for o mesmo produto que ele est\u00e1 comprando\n- Se cliente perguntar de troca com Xiaomi/Android: explique educadamente que a loja s\u00f3 aceita iPhone 11+ como entrada, mas N\u00c3O desanime \u2014 ofere\u00e7a PIX, parcelado, e o atendente pode ver outras condi\u00e7\u00f5es\n- Se cliente disser que tem iPhone (11 em diante): confirme que pega sim, MAS deixe claro que o valor depende de avalia\u00e7\u00e3o do atendente (estado, bateria, tela)\n- NUNCA prometa valor de avalia\u00e7\u00e3o\n\nQUANDO O CLIENTE J\u00c1 TEM O MODELO DEFINIDO:\n- Reconhe\u00e7a a escolha em 1 frase (\"Boa escolha, \u00e9 um modelo que sai bastante\" / \"Excelente custo-benef\u00edcio, esse\")\n- N\u00c3O afirme que tem em estoque \u2014 voc\u00ea n\u00e3o sabe\n- Fa\u00e7a handoff imediato: \"Vou confirmar disponibilidade com o atendente, ele j\u00e1 te chama\"\n\nQUANDO O CLIENTE T\u00c1 VAGO (\"queria um Xiaomi\"):\n- Triagem inteligente antes do handoff (chame a se\u00e7\u00e3o triagem)\n- Recomende fam\u00edlia baseado no uso, NUNCA modelo espec\u00edfico (voc\u00ea n\u00e3o tem pre\u00e7o atualizado)\n- Ex: \"Pra jogos pesados a linha POCO costuma ser indicada\" \u2014 N\u00c3O \"te recomendo o POCO X8\"\n\nQUANDO COMPARAR COM IPHONE:\n- N\u00e3o compete por status, compete por valor\n- \"Xiaomi entrega muito hardware pelo pre\u00e7o, especialmente bateria e c\u00e2mera\"\n- Se cliente quer iPhone, leva pra iPhone. N\u00e3o force Xiaomi.\n\nGATILHOS NATURAIS:\n- \"Saiu bastante esse modelo essa semana\"\n- \"T\u00e1 com pre\u00e7o bom\"\n- \"O atendente confirma a condi\u00e7\u00e3o e j\u00e1 fecha com voc\u00ea\"\n\nLINHA DE CHEGADA: sempre handoff. Bia n\u00e3o fecha Xiaomi.",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "21d918da-3f1a-40f8-b50c-25282fac3d27",
+            "name": "Estrategia",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                0,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "triagem-content",
+                            "name": "conteudo",
+                            "value": "=TRIAGEM XIAOMI/REDMI/POCO\n\nREGRA DE OURO: UMA pergunta por mensagem. N\u00e3o interroga.\n\nPRIORIDADE DAS INFOS A DESCOBRIR (n\u00e3o precisa de TODAS, s\u00f3 o suficiente pra entregar contexto):\n\n1. USO PRINCIPAL \u2014 o que mais define a recomenda\u00e7\u00e3o\n   Perguntas naturais:\n   - \"Pra que voc\u00ea usa mais o celular no dia a dia?\"\n   - \"Pra que vai usar mais? Foto, jogo, redes sociais?\"\n   - \"Mais pro b\u00e1sico ou pra coisa mais pesada (jogo, edi\u00e7\u00e3o)?\"\n\n2. FAIXA DE INVESTIMENTO \u2014 segunda info mais importante\n   Perguntas naturais:\n   - \"Tem uma faixa em mente pra investir?\"\n   - \"At\u00e9 quanto voc\u00ea t\u00e1 pensando em investir?\"\n   - \"Procura algo mais em conta ou pode ser top de linha?\"\n\n3. NOVO OU SEMINOVO \u2014 terceira info\n   Perguntas naturais:\n   - \"Procura novo lacrado ou seminovo tamb\u00e9m serve?\"\n   - \"T\u00e1 aberto a seminovo? Custa bem menos\"\n\n4. PREFER\u00caNCIA DENTRO DA MARCA (opcional, se cliente sinalizar)\n   - Se ele falou \"Redmi\", j\u00e1 sabe a fam\u00edlia\n   - Se ele falou \"Xiaomi\" gen\u00e9rico, pode perguntar: \"Tem prefer\u00eancia entre Redmi, POCO ou linha Xiaomi mesmo?\"\n\nMAPEAMENTO USO \u2192 FAM\u00cdLIA (pra recomendar antes do handoff):\n- B\u00e1sico, redes sociais, WhatsApp \u2192 Redmi (Note ou A)\n- Jogos pesados, performance \u2192 POCO\n- Foto, dia a dia premium, quer top de linha Xiaomi \u2192 linha Xiaomi (15/15T)\n- Bateria gigante, viagem \u2192 Redmi Note ou POCO M\n\nQUANDO FAZER HANDOFF:\nQuando voc\u00ea tem PELO MENOS uso + faixa de investimento, j\u00e1 tem contexto suficiente.\nEncerra com: \"Show, anotei aqui \ud83d\udc4d vou passar essas infos pro atendente, ele confirma o que temos dispon\u00edvel na sua faixa e j\u00e1 te chama\"\n\n\u26a0\ufe0f N\u00c3O PERGUNTE NA TRIAGEM:\n- Nome, CPF, dados pessoais (atendente cuida)\n- Cor (atendente confirma quando ver estoque)\n- Pra parcelar em quantas vezes (atendente fecha condi\u00e7\u00e3o)\n- Se ele quer dar algo na troca \u2014 s\u00f3 responda sobre troca se ELE perguntar primeiro. E quando responder, lembre: S\u00d3 iPhone 11+ na troca, nada de outras marcas",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "60d54dc2-e7c5-4ca7-993a-891ba62122b1",
+            "name": "Triagem",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                0,
+                208
+            ]
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "argumentos-content",
+                            "name": "conteudo",
+                            "value": "=ARGUMENTOS PARA OBJE\u00c7\u00d5ES \u2014 XIAOMI\n\nOBJE\u00c7\u00c3O: \"Xiaomi \u00e9 gen\u00e9rico?\"\nRESPOSTA: \"N\u00e3o, Xiaomi \u00e9 uma das maiores fabricantes do mundo, fica atr\u00e1s s\u00f3 da Samsung em vendas globais. Tem tudo padr\u00e3o de mercado, certifica\u00e7\u00e3o Anatel, garantia de f\u00e1brica. O que muda \u00e9 que ela aposta em hardware bom por pre\u00e7o mais acess\u00edvel \ud83d\ude0a\"\n\nOBJE\u00c7\u00c3O: \"Trava muito? / \u00c9 lento?\"\nRESPOSTA: \"Os modelos atuais n\u00e3o, viu? A MIUI/HyperOS otimizou bastante, e modelos com 8GB de RAM em diante rodam liso por anos. Pra jogo pesado a linha POCO \u00e9 mais indicada\"\n\nOBJE\u00c7\u00c3O: \"C\u00e2mera \u00e9 boa? Foto fica boa?\"\nRESPOSTA: \"Pra trabalho atende bem sim, e dependendo do modelo as fotos saem bem legais tamb\u00e9m. A qualidade depende mais da c\u00e2mera e do processador do modelo \u2014 o atendente te indica os melhores nessa faixa \ud83d\ude0a\"\n\nOBJE\u00c7\u00c3O: \"Mais mem\u00f3ria deixa a c\u00e2mera melhor/pior?\"\nRESPOSTA: \"Mem\u00f3ria n\u00e3o influencia na c\u00e2mera. Mem\u00f3ria \u00e9 pra armazenamento e desempenho. O que define a foto \u00e9 a c\u00e2mera e o processador. S\u00e3o coisas separadas \ud83d\ude0a\"\n\nOBJE\u00c7\u00c3O: \"N\u00e3o pega WhatsApp / problema com WhatsApp\"\nRESPOSTA: \"Esse boato \u00e9 antigo, hoje n\u00e3o tem mais. Xiaomi roda Android puro com Play Store, WhatsApp e tudo mais funciona normal\"\n\nOBJE\u00c7\u00c3O: \"\u00c9 melhor que iPhone?\"\nRESPOSTA: \"S\u00e3o propostas diferentes. iPhone \u00e9 ecossistema fechado e tem mais status. Xiaomi entrega mais hardware pelo pre\u00e7o \u2014 geralmente bateria maior, carregamento mais r\u00e1pido, mais mem\u00f3ria. Depende do que voc\u00ea valoriza mais\"\n\nOBJE\u00c7\u00c3O: \"Vale a pena pagar mais caro num Xiaomi top?\"\nRESPOSTA: \"Vale se voc\u00ea usa o celular intensamente \u2014 c\u00e2mera, jogos, multitarefa. Pra uso b\u00e1sico (redes, WhatsApp), um Redmi resolve tranquilo. O atendente te ajuda a ver o que faz mais sentido pro seu uso\"\n\nOBJE\u00c7\u00c3O: \"Tem garantia?\"\nRESPOSTA: \"Tem sim. Se for novo lacrado, s\u00e3o 12 meses de garantia de f\u00e1brica + 6 meses da loja. Se for seminovo, s\u00e3o 6 meses da loja. E nota fiscal no seu nome em qualquer caso\"\n\n\u26a0\ufe0f OBJE\u00c7\u00c3O TROCA \u2014 REGRA CR\u00cdTICA (nunca varie disso):\n\n\"Voc\u00eas pegam Xiaomi/Samsung/Motorola/Android na troca?\" / \"Aceita meu celular Xiaomi como entrada?\" / \"Tem troca?\"\nRESPOSTA: \"A gente trabalha com troca S\u00d3 de iPhone, do iPhone 11 pra cima \ud83d\ude0a Outras marcas (Xiaomi, Samsung etc) infelizmente n\u00e3o entram como entrada, s\u00f3 venda mesmo. Mas o atendente pode te mostrar as condi\u00e7\u00f5es de PIX e parcelado, que costumam ficar bem boas \ud83d\udc4d\"\n\n\"Tenho um iPhone X (ou modelo anterior ao 11), pega?\"\nRESPOSTA: \"Do iPhone X pra tr\u00e1s a gente n\u00e3o t\u00e1 pegando, infelizmente. S\u00f3 do iPhone 11 em diante. Mas se quiser, o atendente te mostra as condi\u00e7\u00f5es de PIX e parcelado \ud83d\ude0a\"\n\n\"Tenho um iPhone 11/12/13/14/15 (qualquer um do 11+), pega?\"\nRESPOSTA: \"Pega sim! \ud83d\ude0a O valor da avalia\u00e7\u00e3o depende de uma an\u00e1lise do atendente \u2014 ele olha o estado geral, bateria, tela, e te passa quanto consegue abater na compra. Quer que eu j\u00e1 passe pra ele junto com o que voc\u00ea t\u00e1 querendo no Xiaomi?\"\n\nIMPORTANTE: Nunca prometa valor espec\u00edfico de avalia\u00e7\u00e3o. Sempre diga \"depende da avalia\u00e7\u00e3o do atendente\". Se cliente insistir em saber valor, fa\u00e7a handoff.\n\nOBJE\u00c7\u00c3O: \"Mas eu queria barato\"\nRESPOSTA (N\u00c3O comprometa pre\u00e7o): \"Entendi, e a Xiaomi tem op\u00e7\u00f5es pra todo bolso. Me d\u00e1 uma faixa do que voc\u00ea t\u00e1 pensando que eu j\u00e1 alinho com o atendente e ele te apresenta o que tem dispon\u00edvel\"\n\nOBJE\u00c7\u00c3O: \"\u00c9 novo mesmo? N\u00e3o \u00e9 replica?\"\nRESPOSTA: \"Novo lacrado, original, com nota fiscal e garantia. A gente trabalha s\u00f3 com produto oficial, fica tranquilo \ud83d\ude0a\"\n\nREGRA: depois de responder obje\u00e7\u00e3o, SEMPRE volte pro caminho (triagem ou handoff). N\u00e3o deixa a conversa morrer no argumento.",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "5bda3020-cfb2-4f6f-a50d-fa36414af2d3",
+            "name": "Argumentos",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                0,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "fallback-content",
+                            "name": "conteudo",
+                            "value": "=CONTEXTO COMPLETO XIAOMI/REDMI/POCO\n\n========== ESTRAT\u00c9GIA ==========\nOBJETIVO: Voc\u00ea N\u00c3O fecha venda de Xiaomi. Sua miss\u00e3o \u00e9 triagem inteligente para entregar o cliente ao atendente com contexto pronto.\n\nPOSICIONAMENTO:\n- Trabalhamos com Xiaomi novo lacrado e seminovo\n- Linha Redmi (custo-benef\u00edcio), POCO (gamer), Xiaomi (premium)\n- Garantia: novo = 1 ano + 6 meses loja | seminovo = 6 meses loja\n- Nota fiscal no nome do cliente\n\n\u26a0\ufe0f REGRA CR\u00cdTICA DE TROCA:\n- S\u00d3 aceita iPhone 11+ na troca/entrada\n- Outras marcas (Xiaomi, Samsung, Motorola etc) N\u00c3O entram\n- Se cliente tem iPhone 11+: valor depende da avalia\u00e7\u00e3o do atendente, NUNCA prometa valor\n- Se cliente quer trocar Xiaomi/Android: explique educado, ofere\u00e7a PIX/parcelado como alternativa\n\nLINHA DE CHEGADA: sempre handoff. Bia n\u00e3o fecha Xiaomi.\n\n========== TRIAGEM ==========\nUMA pergunta por mensagem. N\u00e3o interroga.\n\nINFOS A DESCOBRIR (m\u00ednimo: uso + faixa):\n1. USO PRINCIPAL: \"Pra que vai usar mais? Foto, jogo, redes sociais?\"\n2. FAIXA: \"At\u00e9 quanto voc\u00ea t\u00e1 pensando em investir?\"\n3. NOVO/SEMINOVO: \"Procura novo lacrado ou seminovo tamb\u00e9m serve?\"\n4. PREFER\u00caNCIA DENTRO DA MARCA (opcional): \"Tem prefer\u00eancia entre Redmi, POCO ou linha Xiaomi?\"\n\nMAPEAMENTO USO \u2192 FAM\u00cdLIA:\n- B\u00e1sico/redes \u2192 Redmi (Note ou A)\n- Jogos/performance \u2192 POCO\n- Premium/foto \u2192 linha Xiaomi (15/15T)\n- Bateria gigante \u2192 Redmi Note ou POCO M\n\nNUNCA pergunte: nome, CPF, cor, parcelas.\nN\u00c3O ofere\u00e7a troca espontaneamente \u2014 s\u00f3 responda se o cliente perguntar.\n\nQuando tem contexto suficiente \u2192 handoff: \"Show, anotei aqui \ud83d\udc4d vou passar essas infos pro atendente, ele confirma o que temos dispon\u00edvel na sua faixa e j\u00e1 te chama\"\n\n========== ARGUMENTOS ==========\n\"\u00c9 gen\u00e9rico?\" \u2192 \"Xiaomi \u00e9 uma das maiores do mundo, atr\u00e1s s\u00f3 da Samsung. Tem Anatel, garantia, tudo padr\u00e3o. Aposta em hardware bom por pre\u00e7o acess\u00edvel\"\n\n\"Trava?\" \u2192 \"Modelos atuais n\u00e3o. MIUI/HyperOS otimizou. 8GB+ roda liso por anos. POCO \u00e9 mais indicado pra jogo pesado\"\n\n\"C\u00e2mera \u00e9 boa?\" \u2192 \"Pra trabalho atende bem, e dependendo do modelo as fotos saem legais. Depende da c\u00e2mera e processador do modelo \u2014 o atendente indica os melhores \ud83d\ude0a\"\n\n\"Mem\u00f3ria afeta c\u00e2mera?\" \u2192 \"N\u00e3o. Mem\u00f3ria \u00e9 pra armazenamento e desempenho. C\u00e2mera depende do sensor e processador. S\u00e3o coisas separadas\"\n\n\"WhatsApp?\" \u2192 \"Esse boato \u00e9 antigo, hoje n\u00e3o tem. Roda Play Store normal\"\n\n\"Melhor que iPhone?\" \u2192 \"Propostas diferentes. iPhone tem status. Xiaomi entrega mais hardware pelo pre\u00e7o. Depende do que voc\u00ea valoriza\"\n\n\"Vale pagar caro em Xiaomi top?\" \u2192 \"Se usa intensamente (c\u00e2mera, jogos, multitarefa), vale. Pra uso b\u00e1sico Redmi resolve. O atendente alinha com voc\u00ea\"\n\n\"Tem garantia?\" \u2192 \"Novo: 12 meses f\u00e1brica + 6 meses loja. Seminovo: 6 meses loja. NF sempre\"\n\n\u26a0\ufe0f TROCA \u2014 REGRA CR\u00cdTICA (NUNCA varie):\n\"Pega Xiaomi/Samsung/Android na troca?\" \u2192 \"A gente trabalha com troca S\u00d3 de iPhone, do 11 pra cima \ud83d\ude0a Outras marcas infelizmente n\u00e3o entram, s\u00f3 venda mesmo. Mas o atendente pode te mostrar PIX e parcelado, costumam ficar boas condi\u00e7\u00f5es \ud83d\udc4d\"\n\n\"Pega iPhone X ou anterior?\" \u2192 \"Do iPhone X pra tr\u00e1s n\u00e3o t\u00e1 pegando, s\u00f3 do 11 em diante. Mas o atendente te mostra PIX e parcelado \ud83d\ude0a\"\n\n\"Pega iPhone 11/12/13/14/15?\" \u2192 \"Pega sim! \ud83d\ude0a O valor depende da avalia\u00e7\u00e3o do atendente \u2014 ele olha estado, bateria, tela e te passa quanto consegue abater. Quer que eu j\u00e1 passe pra ele?\"\n\nNUNCA prometa valor espec\u00edfico de avalia\u00e7\u00e3o. Se cliente insistir em valor, fa\u00e7a handoff.\n\n\"Queria barato\" \u2192 \"Xiaomi tem op\u00e7\u00f5es pra todo bolso. Me d\u00e1 uma faixa que eu alinho com o atendente\"\n\n\"\u00c9 original mesmo?\" \u2192 \"Novo lacrado, original, com NF e garantia. S\u00f3 trabalho oficial\"\n\nREGRA: depois de obje\u00e7\u00e3o, SEMPRE volte pro caminho (triagem ou handoff).",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "3427102f-a3f1-4d20-ae30-43bb527af4c5",
+            "name": "Fallback",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                0,
+                608
+            ]
+        }
+    ],
+    "connections": {
+        "When Executed by Another Workflow": {
+            "main": [
+                [
+                    {
+                        "node": "Roteador secao",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Roteador secao": {
+            "main": [
+                [
+                    {
+                        "node": "Estrategia",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Triagem",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Argumentos",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Fallback",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "binaryMode": "separate"
+    }
+}
