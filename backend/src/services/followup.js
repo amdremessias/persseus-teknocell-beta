@@ -158,16 +158,26 @@ export async function runFollowupJob() {
 
 async function cancelClosedLeads() {
   try {
+    // Cancela follow-up de abandono quando: (a) o lead está num status terminal
+    // (inclui 'convertido' e 'pos_venda' — quem comprou não é abandono), OU
+    // (b) o lead tem uma sequência de pós-venda ATIVA (PV1..PV4 não são abandono).
     const affected = await prisma.$executeRaw`
       UPDATE bia_followup bf
       SET status = 'concluido', updated_at = NOW()
       FROM leads l
       WHERE (bf.number = l.telefone OR bf.number = l.identifier_canal)
         AND bf.status = 'ativo'
-        AND l.status_pipeline IN ('finalizado', 'fechado', 'perdido', 'concluido', 'arquivado')
+        AND (
+          l.status_pipeline IN ('finalizado', 'fechado', 'perdido', 'concluido', 'arquivado', 'convertido', 'pos_venda')
+          OR EXISTS (
+            SELECT 1 FROM pos_venda_followup pv
+            WHERE (pv.number = l.telefone OR pv.number = l.identifier_canal)
+              AND pv.status = 'ativo'
+          )
+        )
     `;
     if (affected > 0) {
-      console.log(`[followup] ${affected} follow-up(s) cancelados (lead fechado/perdido)`);
+      console.log(`[followup] ${affected} follow-up(s) cancelados (lead fechado/convertido/pós-venda)`);
     }
   } catch (err) {
     console.error('[followup] erro em cancelClosedLeads:', err.message);
@@ -222,8 +232,14 @@ async function detectAbandonedLeads() {
       AND last_msg.tipo::text IN ('bia', 'atendente')
       AND last_msg.criado_em < ${cutoffMin}
       AND last_msg.criado_em > ${cutoffMax}
-      AND l.status_pipeline NOT IN ('finalizado', 'fechado', 'perdido', 'concluido', 'arquivado', 'pos_venda')
+      AND l.status_pipeline NOT IN ('finalizado', 'fechado', 'perdido', 'concluido', 'arquivado', 'pos_venda', 'convertido')
       AND NOT (l.atendente_id IS NOT NULL AND l.bia_ativa = false)
+      -- Reforço: quem tem pós-venda ATIVA (PV1..PV4) nunca é "abandono".
+      AND NOT EXISTS (
+        SELECT 1 FROM pos_venda_followup pv
+        WHERE (pv.number = l.telefone OR pv.number = l.identifier_canal)
+          AND pv.status = 'ativo'
+      )
       AND (
         LOWER(COALESCE(l.metadata->>'intencao', '')) LIKE ANY(${patterns})
         OR EXISTS (
