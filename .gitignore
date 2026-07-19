@@ -24,3 +24,4 @@ docs/*.csv
 docs/*.xlsx
 docs/*.pdf
 docs/*.txt
+docs/*.json
