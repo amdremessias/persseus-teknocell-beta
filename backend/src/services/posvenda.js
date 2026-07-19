@@ -119,6 +119,12 @@ function totalStagesFor(produto) {
 
 export async function startPosVendaForVenda(venda, lead) {
   if (!APPLE_PRODUTOS.includes(venda.produto)) return; // não-Apple não entra
+  // Pós-venda depende de texto/template WhatsApp. Lead de outro canal (ex: Instagram,
+  // sem template) não entra na sequência — a venda é registrada normalmente.
+  if (lead.canal && lead.canal !== 'whatsapp') {
+    console.log(`[posvenda] venda ${venda.id} de lead canal=${lead.canal} — sequência WhatsApp pulada`);
+    return;
+  }
   const number = lead.telefone || lead.identifierCanal || null;
   if (!number) {
     console.warn(`[posvenda] venda ${venda.id} sem número — pós-venda não agendado`);

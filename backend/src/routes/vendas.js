@@ -27,7 +27,7 @@ export default async function vendaRoutes(fastify) {
 
     const lead = await prisma.lead.findUnique({
       where: { id: req.params.id },
-      select: { id: true, nome: true, telefone: true, identifierCanal: true },
+      select: { id: true, nome: true, telefone: true, identifierCanal: true, canal: true },
     });
     if (!lead) return reply.code(404).send({ error: "lead não encontrado" });
 

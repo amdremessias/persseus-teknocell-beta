@@ -2,6 +2,7 @@ import { z } from 'zod';
 import prisma from '../lib/prisma.js';
 import { ingestMessage } from '../core/ingestion.js';
 import { sendToCustomer } from '../core/outbound.js';
+import { getSetting } from '../lib/settings-cache.js';
 
 // Best-effort — log warn, não bloqueia. TODO: enforce em prod capturando raw body via onRequest hook.
 function checkMetaSignature(req) {
@@ -23,14 +24,17 @@ function checkMercadophoneSignature(req) {
   }
 }
 
-function verifyMetaChallenge(req, reply) {
+// channelKey = chave do verify token específico do canal (ex: META_VERIFY_TOKEN_INSTAGRAM).
+// Aceita o token do canal (configurável na UI) e cai pro compartilhado META_VERIFY_TOKEN.
+function verifyMetaChallenge(req, reply, channelKey) {
   const mode      = req.query['hub.mode'];
   const token     = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
-  if (mode === 'subscribe' && token && token === process.env.META_VERIFY_TOKEN) {
+  const expected  = getSetting(channelKey) || getSetting('META_VERIFY_TOKEN');
+  if (mode === 'subscribe' && token && expected && token === expected) {
     return reply.send(challenge);
   }
-  console.warn('[webhook] Meta challenge falhou — hub.verify_token não bate');
+  console.warn(`[webhook] Meta challenge falhou (${channelKey}) — hub.verify_token não bate`);
   return reply.code(403).send('Forbidden');
 }
 
@@ -46,7 +50,7 @@ export default async function webhookRoutes(fastify) {
 
   // ── Instagram ────────────────────────────────────────────────────────────
   fastify.get('/api/webhooks/instagram', async (req, reply) => {
-    return verifyMetaChallenge(req, reply);
+    return verifyMetaChallenge(req, reply, 'META_VERIFY_TOKEN_INSTAGRAM');
   });
 
   fastify.post('/api/webhooks/instagram', async (req, reply) => {
@@ -64,7 +68,7 @@ export default async function webhookRoutes(fastify) {
 
   // ── Messenger (Facebook) ─────────────────────────────────────────────────
   fastify.get('/api/webhooks/messenger', async (req, reply) => {
-    return verifyMetaChallenge(req, reply);
+    return verifyMetaChallenge(req, reply, 'META_VERIFY_TOKEN_MESSENGER');
   });
 
   fastify.post('/api/webhooks/messenger', async (req, reply) => {

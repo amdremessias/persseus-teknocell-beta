@@ -91,8 +91,12 @@ const SECTIONS: SectionDef[] = [
     fields: [
       { key: "META_GRAPH_TOKEN", label: "Graph API Token (página)", type: "password", placeholder: "EAAB..." },
       { key: "IG_PAGE_ID", label: "Page ID do Instagram", type: "text" },
-      { key: "META_VERIFY_TOKEN_INSTAGRAM", label: "Verify Token (webhook)", type: "password", help: "Definido no painel da Meta — o CRM responde a este token no GET /api/webhooks/instagram." },
+      { key: "META_VERIFY_TOKEN_INSTAGRAM", label: "Verify Token (webhook)", type: "password", help: "Definido no painel da Meta — o CRM responde a este token no GET /api/webhooks/instagram (cai pro META_VERIFY_TOKEN compartilhado se vazio)." },
       { key: "META_APP_SECRET_INSTAGRAM", label: "App Secret", type: "password", help: "Usado pra validar X-Hub-Signature-256." },
+      { key: "BIA_INSTAGRAM_ENABLED", label: "Bia atende DMs do Instagram", type: "select", options: [
+        { value: "false", label: "Não (vai pra atendente humano)" },
+        { value: "true", label: "Sim (Bia responde automaticamente)" },
+      ], help: "Por padrão os DMs do Instagram caem pra humano. Ligue quando a Bia estiver pronta pro canal." },
     ],
   },
   {

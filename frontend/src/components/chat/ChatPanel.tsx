@@ -449,16 +449,19 @@ export default function ChatPanel({ leadId, onBack }: Props) {
   const statusLabel = useMemo(() => computeStatusLabel(lead), [lead]);
   const canalLabel = lead?.canal ? (CHANNEL_META[lead.canal]?.label || lead.canal) : "";
 
+  const isInstagram = lead?.canal === "instagram";
+
   const within24h = useMemo(() => {
-    if (lead?.canal !== "whatsapp") return true;
+    // Janela de 24h vale pros canais Meta (WhatsApp e Instagram). Demais: sem limite.
+    if (lead?.canal !== "whatsapp" && lead?.canal !== "instagram") return true;
     const clientMsgs = messages.filter((m) => m.tipo === "cliente");
     if (clientMsgs.length > 0) {
       const last = clientMsgs[clientMsgs.length - 1];
       return Date.now() - new Date(last.criadoEm).getTime() < 24 * 60 * 60 * 1000;
     }
-    // No client messages yet — for pos_venda leads the initial message was a template/receipt
-    // which opens the WhatsApp 24h window. Allow text if that template was sent recently.
-    if (lead?.statusPipeline === "pos_venda") {
+    // WhatsApp pos_venda: a mensagem inicial foi template/recibo que abre a janela.
+    // (Instagram NÃO tem template — sem essa exceção.)
+    if (lead?.canal === "whatsapp" && lead?.statusPipeline === "pos_venda") {
       const outboundMsgs = messages.filter((m) => m.tipo === "atendente");
       if (outboundMsgs.length > 0) {
         const last = outboundMsgs[outboundMsgs.length - 1];
@@ -708,8 +711,20 @@ export default function ChatPanel({ leadId, onBack }: Props) {
 
           <SuggestedReplies leadId={leadId} onSelect={(t) => setText(t)} />
 
-          {/* 24h window banner */}
-          {(!within24h || windowExpiredError) && (
+          {/* 24h window banner — Instagram não tem template: só avisa pra aguardar o cliente */}
+          {(!within24h || windowExpiredError) && isInstagram && (
+            <div className="mx-3 mb-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2">
+              <AlertTriangle size={14} className="text-amber-600 shrink-0" />
+              <span className="text-xs text-amber-800">
+                {windowExpiredError
+                  ? "Mensagem não entregue — janela de 24h expirada. Aguarde o cliente responder."
+                  : "Janela de 24h expirada — aguarde o cliente responder"}
+              </span>
+            </div>
+          )}
+
+          {/* 24h window banner — WhatsApp: oferece template aprovado */}
+          {(!within24h || windowExpiredError) && !isInstagram && (
             <div className="mx-3 mb-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 min-w-0">
                 <AlertTriangle size={14} className="text-amber-600 shrink-0" />
@@ -917,7 +932,7 @@ export default function ChatPanel({ leadId, onBack }: Props) {
                   disabled={!within24h || windowExpiredError}
                   placeholder={
                     (!within24h || windowExpiredError)
-                      ? "Janela 24h expirada — use um template"
+                      ? (isInstagram ? "Janela 24h expirada — aguarde o cliente responder" : "Janela 24h expirada — use um template")
                       : attachment
                       ? "Legenda (opcional)..."
                       : "Mensagem..."

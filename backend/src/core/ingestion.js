@@ -1,7 +1,8 @@
 import prisma from '../lib/prisma.js';
 import { getAdapter } from '../channels/index.js';
 import { scheduleBiaDispatch } from './bia-dispatcher.js';
-import { getSetting } from '../lib/settings-cache.js';
+import { getSetting, getSettingBool } from '../lib/settings-cache.js';
+import { resolveInstagramName } from '../channels/instagram/profile.js';
 import { downloadMedia } from '../lib/media-downloader.js';
 import { dispatchPush } from '../lib/push.js';
 import { stopFollowupForNumber } from '../services/followup.js';
@@ -175,6 +176,12 @@ async function handleIncoming(canal, parsed, rawPayload) {
   const { duplicate, webhookEvent } = await dedup(eventId, source, effectiveCanal, rawPayload);
   if (duplicate) return { idempotent: true, eventId };
 
+  // Instagram: a Meta não manda o nome no webhook — busca via Graph API (cacheado)
+  // antes do upsert pra o lead já nascer com o nome real.
+  if (effectiveCanal === 'instagram' && !leadInfo.contactName) {
+    leadInfo.contactName = await resolveInstagramName(leadInfo.identifier);
+  }
+
   let lead = await upsertLead(effectiveCanal, leadInfo);
   // Captura origem de anúncio CTWA (1ª msg do lead, ou qualquer msg se sem origem)
   lead = await captureAdsOrigin(lead, parsed.referral);
@@ -237,11 +244,14 @@ async function handleIncoming(canal, parsed, rawPayload) {
     });
   }
 
-  // Só dispara BIA se BIA_MODE=active (default é observer)
+  // Só dispara BIA se BIA_MODE=active (default é observer).
+  // Instagram cai pra atendente humano por padrão — a Bia no IG fica atrás do
+  // switch BIA_INSTAGRAM_ENABLED (decisão de ligar é de produto, default off).
   const biaMode = getSetting('BIA_MODE', 'observer');
-  if (biaMode === 'active' && lead.biaAtiva) {
+  const biaCanalOk = effectiveCanal === 'whatsapp' || getSettingBool('BIA_INSTAGRAM_ENABLED', false);
+  if (biaMode === 'active' && lead.biaAtiva && biaCanalOk) {
     setImmediate(() => {
-      scheduleBiaDispatch(lead, canal)
+      scheduleBiaDispatch(lead, effectiveCanal)
         .catch(err => console.error('[ingestion:incoming] scheduleBiaDispatch error:', err.message));
     });
   }
@@ -285,7 +295,9 @@ async function handleEcho(canal, parsed, rawPayload) {
 
   let isNewPosvenda = false;
   if (!lead) {
-    if (!identifier) {
+    // Non-WhatsApp (ex: Instagram): echo NUNCA cria lead — só ecoa em lead existente.
+    // (No WhatsApp, echo de recibo/template pode criar lead pos_venda — mantido.)
+    if (!identifier || effectiveCanal !== 'whatsapp') {
       await prisma.webhookEvent.update({
         where: { id: webhookEvent.id },
         data: { erroMsg: 'lead_not_found_for_echo' },
