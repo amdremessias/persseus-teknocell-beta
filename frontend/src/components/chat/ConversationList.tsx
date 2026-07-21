@@ -28,6 +28,7 @@ interface ContactResult {
 interface Props {
   selectedId: string | null;
   onSelect: (id: string) => void;
+  assistenciaMode?: boolean;
 }
 
 function isLikelyPhone(v: string) {
@@ -49,7 +50,7 @@ const STATUS_LABEL: Record<ChatItem["status"], { label: string; color: string }>
   finalizado:           { label: "Finalizado",      color: "bg-gray-200 text-gray-600" },
 };
 
-export default function ConversationList({ selectedId, onSelect }: Props) {
+export default function ConversationList({ selectedId, onSelect, assistenciaMode = false }: Props) {
   const { user } = useAuth();
   const mobileNav = useMobileNav();
   const handoffPending = useHandoffStore((s) => s.pending);
@@ -85,7 +86,7 @@ export default function ConversationList({ selectedId, onSelect }: Props) {
     return p;
   }, [q, canal, atendenteId, tagId]);
 
-  const { items, total, loading, refetch } = useChats(params);
+  const { items, total, loading, refetch } = useChats({ ...params, assistencia: assistenciaMode });
   const meuId = user?.id;
   const { total: meuCount, refetch: refetchMeu } = useChats(
     meuId ? { atendenteId: meuId } : {},
@@ -153,10 +154,18 @@ export default function ConversationList({ selectedId, onSelect }: Props) {
     }, 300);
   }
 
+  async function tagAsAssistenciaIfNeeded(leadId: string) {
+    if (!assistenciaMode) return;
+    const assistTag = tags.find((t) => t.nome === "Assistência");
+    if (!assistTag) return;
+    await api.post(`/leads/${leadId}/tags`, { tagId: assistTag.id }).catch(() => null);
+  }
+
   async function startConversation(contact: ContactResult) {
     setCreating(true);
     try {
       const { data } = await api.post("/conversations/from-contact", { contactId: contact.id });
+      await tagAsAssistenciaIfNeeded(data.leadId);
       setNewChatOpen(false);
       refetch();
       onSelect(data.leadId);
@@ -171,6 +180,7 @@ export default function ConversationList({ selectedId, onSelect }: Props) {
     setCreating(true);
     try {
       const { data } = await api.post("/conversations/from-phone", { telefone });
+      await tagAsAssistenciaIfNeeded(data.leadId);
       setNewChatOpen(false);
       refetch();
       onSelect(data.leadId);
@@ -194,7 +204,7 @@ export default function ConversationList({ selectedId, onSelect }: Props) {
             <Menu size={20} />
           </button>
 
-          <h2 className="text-base font-bold text-gray-900 flex-1">Chats</h2>
+          <h2 className="text-base font-bold text-gray-900 flex-1">{assistenciaMode ? "Assistência" : "Chats"}</h2>
 
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-gray-400">{total}</span>

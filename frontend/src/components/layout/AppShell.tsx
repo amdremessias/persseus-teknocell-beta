@@ -146,8 +146,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           onMobileClose={() => setMobileNavOpen(false)}
         />
         <main className="flex-1 flex flex-col overflow-hidden">
-          {/* Global mobile top bar — shown on all pages except /chats (which has its own hamburger in ConversationList) */}
-          {!pathname.startsWith("/chats") && (
+          {/* Global mobile top bar — shown on all pages except /chats and /assistencia (which reuse ConversationList's own hamburger) */}
+          {!pathname.startsWith("/chats") && !pathname.startsWith("/assistencia") && (
             <div className="md:hidden shrink-0 flex items-center gap-3 px-4 h-12 border-b border-gray-100 bg-white">
               <button
                 onClick={() => setMobileNavOpen(true)}

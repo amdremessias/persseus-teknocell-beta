@@ -37,6 +37,7 @@ export interface UseChatsParams {
   atendenteId?: string;
   tagId?: string;
   search?: string;
+  assistencia?: boolean;
 }
 
 export function useChats(params: UseChatsParams = {}, skip = false) {
@@ -54,6 +55,7 @@ export function useChats(params: UseChatsParams = {}, skip = false) {
       if (params.atendenteId) query.atendenteId = params.atendenteId;
       if (params.tagId) query.tagId = params.tagId;
       if (params.search) query.search = params.search;
+      if (params.assistencia) query.assistencia = "1";
       const { data } = await api.get("/chats", { params: query });
       setItems(data.items);
       setTotal(data.total);

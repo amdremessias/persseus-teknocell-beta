@@ -20,9 +20,16 @@ const STAGE_CASE = Prisma.sql`
   END`;
 
 // Mesmo filtro de inclusão de antes: não arquivado + com classificação da Bia
-// ou atividade nos últimos 30 dias. (Requer o LATERAL "act".)
+// ou atividade nos últimos 30 dias. (Requer o LATERAL "act".) Exclui conversas
+// de assistência (marcadas pela Bia no campo legado `tags` ou pela tag "Assistência") —
+// não são oportunidade de venda, não devem contar no funil.
 const INCLUSION = Prisma.sql`
   l.status_pipeline NOT IN ('arquivado')
+  AND NOT ('assistencia' = ANY(l.tags))
+  AND NOT EXISTS (
+    SELECT 1 FROM lead_tags lt JOIN tags t ON t.id = lt.tag_id
+    WHERE lt.lead_id = l.id AND t.nome = 'Assistência'
+  )
   AND (
     (l.metadata->>'estado_atendimento') IS NOT NULL
     OR act.last_activity_at > NOW() - INTERVAL '30 days'

@@ -96,9 +96,31 @@ model Lead {
   leadTags         LeadTag[]
   notes            LeadNote[]
   vendas           Venda[]
+  scheduledMessages ScheduledMessage[]
 
   @@unique([canal, identifierCanal], name: "lead_canal_identifier_uk")
   @@map("leads")
+}
+
+model ScheduledMessage {
+  id                String    @id @default(cuid())
+  leadId            String    @map("lead_id")
+  tipo              String // 'texto' | 'template'
+  texto             String?
+  templateNome      String?   @map("template_nome")
+  templateVariaveis Json?     @map("template_variaveis")
+  scheduledAt       DateTime  @map("scheduled_at")
+  status            String    @default("pendente") // pendente | enviado | falhou | cancelado
+  erro              String?
+  criadoPorId       String?   @map("criado_por_id")
+  criadoEm          DateTime  @default(now()) @map("criado_em")
+  enviadoEm         DateTime? @map("enviado_em")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([status, scheduledAt])
+  @@index([leadId])
+  @@map("scheduled_messages")
 }
 
 model LeadPin {

@@ -12,8 +12,9 @@ import TabInfo from "@/components/chat/TabInfo";
 import TabNotas from "@/components/chat/TabNotas";
 import TagModal from "@/components/chat/TagModal";
 import QuickRepliesDropdown from "@/components/chat/QuickRepliesDropdown";
+import ScheduleMessageModal from "@/components/chat/ScheduleMessageModal";
 import { ORDEM_MODELOS } from "@/components/AvaliacaoIphone";
-import { Send, Paperclip, X, FileText, UserCheck, UserMinus, Pin, Tag as TagIcon, CheckCircle, BadgeCheck, Zap, Trash2, AlertTriangle, ChevronDown, Mic, Square, ArrowLeft, ArrowRightLeft } from "lucide-react";
+import { Send, Paperclip, X, FileText, UserCheck, UserMinus, Pin, Tag as TagIcon, CheckCircle, BadgeCheck, Zap, Trash2, AlertTriangle, ChevronDown, Mic, Square, ArrowLeft, ArrowRightLeft, Clock } from "lucide-react";
 import { cn, CHANNEL_META } from "@/lib/utils";
 
 type Tab = "conversa" | "notas" | "info";
@@ -88,6 +89,7 @@ export default function ChatPanel({ leadId, onBack }: Props) {
   const [tagPills, setTagPills] = useState<{ id: string; nome: string; cor: string }[]>([]);
   const [notesCount, setNotesCount] = useState(0);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateItem | null>(null);
@@ -937,6 +939,14 @@ export default function ChatPanel({ leadId, onBack }: Props) {
                 >
                   <Zap size={20} />
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setScheduleModalOpen(true)}
+                  className="shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-xl transition"
+                  title="Agendar mensagem"
+                >
+                  <Clock size={20} />
+                </button>
 
                 {showQuickReplies && (
                   <QuickRepliesDropdown
@@ -1008,6 +1018,14 @@ export default function ChatPanel({ leadId, onBack }: Props) {
           leadId={leadId}
           onClose={() => setTagModalOpen(false)}
           onChange={fetchTagsApplied}
+        />
+      )}
+
+      {scheduleModalOpen && (
+        <ScheduleMessageModal
+          leadId={leadId}
+          canal={lead?.canal}
+          onClose={() => setScheduleModalOpen(false)}
         />
       )}
 

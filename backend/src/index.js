@@ -31,15 +31,18 @@ import configAvaliacaoIphoneRoutes from "./routes/configAvaliacaoIphone.js";
 import vendaRoutes from "./routes/vendas.js";
 import posvendaRoutes from "./routes/posvenda.js";
 import wabaTemplateRoutes from "./routes/wabaTemplates.js";
+import scheduledMessageRoutes from "./routes/scheduledMessages.js";
 import { checkQueueTimeouts } from "./services/queue.js";
 import { checkStaleLeads, scheduleFaxina } from "./services/watchdog.js";
 import { checkPendingHandoffs, setHandoffIo } from "./services/handoffWatch.js";
 import { runFollowupJob } from "./services/followup.js";
 import { runMessageSyncJob } from "./services/messageSync.js";
 import { runPosVendaJob } from "./services/posvenda.js";
+import { runScheduledMessagesJob } from "./services/scheduledMessages.js";
 import { setupIngestion } from "./core/ingestion.js";
 import { setupOutbound } from "./core/outbound.js";
 import { loadSettings } from "./lib/settings-cache.js";
+import prisma from "./lib/prisma.js";
 
 const fastify = Fastify({ logger: process.env.NODE_ENV !== "production" });
 
@@ -141,6 +144,7 @@ await fastify.register(configAvaliacaoIphoneRoutes);
 await fastify.register(vendaRoutes);
 await fastify.register(posvendaRoutes);
 await fastify.register(wabaTemplateRoutes);
+await fastify.register(scheduledMessageRoutes);
 
 // Health check
 fastify.get("/health", async () => ({ status: "ok", ts: new Date().toISOString() }));
@@ -171,8 +175,17 @@ setInterval(() => runMessageSyncJob(), 10 * 60 * 1000); // depois a cada 10 min
 setTimeout(() => runPosVendaJob(), 20_000);          // run shortly after startup
 setInterval(() => runPosVendaJob(), 60 * 60 * 1000); // then every hour
 
+// Mensagens agendadas manualmente pelo atendente (botão de agendamento no chat)
+setTimeout(() => runScheduledMessagesJob(io), 15_000);   // run shortly after startup
+setInterval(() => runScheduledMessagesJob(io), 60_000);  // then every minute
+
 // Settings cache: DB > process.env > default
 await loadSettings();
+
+// Garante a tag "Assistência" (usada pela seção dedicada de assistência/suporte)
+await prisma.tag
+  .upsert({ where: { nome: "Assistência" }, update: {}, create: { nome: "Assistência", cor: "#f43f5e" } })
+  .catch((err) => console.error("[bootstrap] falha ao criar tag Assistência:", err.message));
 
 // Start
 const port = Number(process.env.PORT || 3001);

@@ -13,7 +13,7 @@ export default async function chatRoutes(fastify) {
   const auth = { onRequest: [fastify.authenticate] };
 
   fastify.get("/api/chats", auth, async (req) => {
-    const { canal, atendenteId, tagId, search, limit = 50, offset = 0 } = req.query;
+    const { canal, atendenteId, tagId, search, assistencia, limit = 50, offset = 0 } = req.query;
     const take = Math.min(Number(limit) || 50, 200);
     const skip = Number(offset) || 0;
 
@@ -21,12 +21,25 @@ export default async function chatRoutes(fastify) {
     if (canal) where.canal = canal;
     if (atendenteId) where.atendenteId = atendenteId;
     if (tagId) where.leadTags = { some: { tagId } };
-    if (search) {
+    // Assistência: leads marcados pela Bia (campo legado `tags`) OU pela tag relacional "Assistência"
+    if (assistencia) {
       where.OR = [
+        { tags: { has: "assistencia" } },
+        { leadTags: { some: { tag: { nome: "Assistência" } } } },
+      ];
+    }
+    if (search) {
+      const searchOr = [
         { nome: { contains: search, mode: "insensitive" } },
         { telefone: { contains: search } },
         { messages: { some: { texto: { contains: search, mode: "insensitive" } } } },
       ];
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: searchOr }];
+        delete where.OR;
+      } else {
+        where.OR = searchOr;
+      }
     }
 
     const leads = await prisma.lead.findMany({

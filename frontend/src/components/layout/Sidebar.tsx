@@ -10,7 +10,7 @@ import {
   MessageSquare, BookUser,
   Settings, ChevronDown, ChevronRight, ChevronLeft, LogOut,
   Globe, Clock, Webhook, UsersRound, FileText, Volume2, VolumeX, MessageCircle,
-  Tag, Zap, Lock, Smartphone, Key, X, Bell, BellOff, CalendarClock, TrendingUp, DollarSign,
+  Tag, Zap, Lock, Smartphone, Key, X, Bell, BellOff, CalendarClock, TrendingUp, DollarSign, Wrench,
 } from "lucide-react";
 import { subscribePush, unsubscribePush, currentPushState, getPushUnsupportedReason } from "@/lib/push";
 import { useHandoffStore } from "@/store/handoffs";
@@ -20,6 +20,7 @@ const navItems = [
   { href: "/followup", icon: CalendarClock, label: "Follow-up" },
   { href: "/funil", icon: TrendingUp, label: "Funil" },
   { href: "/vendas", icon: DollarSign, label: "Vendas" },
+  { href: "/assistencia", icon: Wrench, label: "Assistência" },
   { href: "/contacts", icon: BookUser, label: "Contatos" },
 ];
 
