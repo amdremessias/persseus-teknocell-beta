@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma.js";
+import { toE164BrazilMobile, phoneVariants, formatBrazilPhoneDisplay } from "../utils/phone.js";
 
 // Contact.canal (string) → Lead Channel enum
 const CANAL_MAP = {
@@ -49,6 +50,48 @@ export default async function conversationRoutes(fastify) {
         statusPipeline: "novo",
         biaAtiva: false,
         tags: contact.tags || [],
+      },
+    });
+
+    fastify.io?.emit("lead:new", { id: lead.id });
+
+    return reply.code(201).send({ leadId: lead.id, isNew: true });
+  });
+
+  // Inicia (ou reabre) uma conversa a partir de um telefone digitado manualmente,
+  // sem depender de um Contact pré-cadastrado.
+  fastify.post("/api/conversations/from-phone", auth, async (req, reply) => {
+    const { telefone } = req.body ?? {};
+    if (!telefone?.trim()) return reply.code(400).send({ error: "telefone obrigatorio" });
+
+    const canonical = toE164BrazilMobile(telefone);
+    if (!canonical) return reply.code(400).send({ error: "telefone invalido" });
+
+    const variants = phoneVariants(telefone);
+
+    // Tolerante ao 9º dígito e a leads antigos gravados em `telefone` (não em `identifierCanal`)
+    const existing = await prisma.lead.findFirst({
+      where: {
+        canal: "whatsapp",
+        NOT: { statusPipeline: { in: FINALIZED } },
+        OR: [
+          { identifierCanal: { in: variants } },
+          { telefone: { in: variants } },
+        ],
+      },
+      orderBy: { criadoEm: "desc" },
+    });
+    if (existing) return { leadId: existing.id, isNew: false };
+
+    const lead = await prisma.lead.create({
+      data: {
+        nome: formatBrazilPhoneDisplay(canonical),
+        telefone: canonical,
+        canal: "whatsapp",
+        identifierCanal: canonical,
+        statusPipeline: "novo",
+        biaAtiva: false,
+        tags: [],
       },
     });
 

@@ -30,6 +30,18 @@ interface Props {
   onSelect: (id: string) => void;
 }
 
+function isLikelyPhone(v: string) {
+  return v.replace(/\D/g, "").length >= 8;
+}
+
+function formatPhoneDisplay(v: string) {
+  let d = v.replace(/\D/g, "");
+  if (d.startsWith("55") && d.length >= 12) d = d.slice(2);
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return v;
+}
+
 const STATUS_LABEL: Record<ChatItem["status"], { label: string; color: string }> = {
   aguardando:           { label: "Aguardando",      color: "bg-yellow-100 text-yellow-700" },
   bia_atendendo:        { label: "Bia atendendo",   color: "bg-purple-100 text-purple-700" },
@@ -150,6 +162,20 @@ export default function ConversationList({ selectedId, onSelect }: Props) {
       onSelect(data.leadId);
     } catch {
       alert("Erro ao iniciar conversa");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function startConversationFromPhone(telefone: string) {
+    setCreating(true);
+    try {
+      const { data } = await api.post("/conversations/from-phone", { telefone });
+      setNewChatOpen(false);
+      refetch();
+      onSelect(data.leadId);
+    } catch (err: any) {
+      alert(err?.response?.data?.error || "Erro ao iniciar conversa");
     } finally {
       setCreating(false);
     }
@@ -336,8 +362,17 @@ export default function ConversationList({ selectedId, onSelect }: Props) {
               {contactLoading && (
                 <p className="text-xs text-gray-400 px-1">Buscando...</p>
               )}
-              {!contactLoading && contactSearch && contactResults.length === 0 && (
+              {!contactLoading && contactSearch && contactResults.length === 0 && !isLikelyPhone(contactSearch) && (
                 <p className="text-xs text-gray-400 px-1">Nenhum contato encontrado</p>
+              )}
+              {!contactLoading && isLikelyPhone(contactSearch) && (
+                <button
+                  onClick={() => startConversationFromPhone(contactSearch)}
+                  disabled={creating}
+                  className="w-full text-left px-3 py-2.5 rounded-xl border border-dashed border-green-300 text-green-700 text-sm hover:bg-green-50 transition disabled:opacity-50"
+                >
+                  ➕ Iniciar conversa com {formatPhoneDisplay(contactSearch)}
+                </button>
               )}
               {contactResults.length > 0 && (
                 <ul className="divide-y divide-gray-50 max-h-52 overflow-y-auto rounded-xl border border-gray-100">
