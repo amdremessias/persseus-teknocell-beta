@@ -492,8 +492,13 @@ export default function ChatPanel({ leadId, onBack }: Props) {
     }
   }, [within24h, lead?.canal, templates.length]);
 
+  const templateVarsMissing = useMemo(
+    () => (selectedTemplate?.variaveis ?? []).some((v) => !(templateVars[v] || "").trim()),
+    [selectedTemplate, templateVars]
+  );
+
   async function sendTemplate() {
-    if (!selectedTemplate || sendingTemplate) return;
+    if (!selectedTemplate || sendingTemplate || templateVarsMissing) return;
     setSendingTemplate(true);
     try {
       // Envio real do template WABA aprovado (name + variáveis {{1}}, {{2}}…)
@@ -505,8 +510,9 @@ export default function ChatPanel({ leadId, onBack }: Props) {
       setTemplateVars({});
       setShowTemplateDropdown(false);
       setWindowExpiredError(false);
-    } catch {
-      alert("Não foi possível enviar o template.");
+    } catch (err: any) {
+      const motivo = err?.response?.data?.detalhe || err?.response?.data?.error;
+      alert(motivo ? `Não foi possível enviar o template: ${motivo}` : "Não foi possível enviar o template.");
     } finally {
       setSendingTemplate(false);
     }
@@ -828,10 +834,11 @@ export default function ChatPanel({ leadId, onBack }: Props) {
               ))}
               <button
                 onClick={sendTemplate}
-                disabled={sendingTemplate}
-                className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-xs font-medium py-1.5 rounded-lg transition"
+                disabled={sendingTemplate || templateVarsMissing}
+                title={templateVarsMissing ? "Preencha todas as variáveis do template" : undefined}
+                className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-medium py-1.5 rounded-lg transition"
               >
-                {sendingTemplate ? "Enviando..." : "Enviar template"}
+                {sendingTemplate ? "Enviando..." : templateVarsMissing ? "Preencha as variáveis" : "Enviar template"}
               </button>
             </div>
           )}

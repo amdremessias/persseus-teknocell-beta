@@ -49,6 +49,15 @@ export default async function wabaTemplateRoutes(fastify) {
     const template = await mercadophoneGetApprovedTemplateByName(name);
     if (!template) return reply.code(404).send({ error: "Template não encontrado ou não aprovado" });
 
+    // Meta rejeita parâmetro de texto vazio (#131008) — valida antes de enviar
+    const requiredVars = detectVars(templateBodyText(template.components));
+    const missing = requiredVars.filter((v) => !String(variables?.[v] ?? "").trim());
+    if (missing.length > 0) {
+      return reply.code(400).send({
+        error: `Preencha o valor da variável {${missing.join("}, {")}} do template`,
+      });
+    }
+
     let wid = null;
     try {
       wid = await mercadophoneSendTemplateByName({ to: number, template, variables });

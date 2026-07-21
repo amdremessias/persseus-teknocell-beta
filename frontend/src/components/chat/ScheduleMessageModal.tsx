@@ -88,6 +88,13 @@ export default function ScheduleMessageModal({ leadId, canal, onClose }: Props) 
 
     if (tipo === "texto" && !texto.trim()) { setError("Digite a mensagem"); return; }
     if (tipo === "template" && !selectedTemplate) { setError("Escolha um template"); return; }
+    if (tipo === "template" && selectedTemplate) {
+      const faltando = selectedTemplate.variaveis.filter((v) => !(templateVars[v] || "").trim());
+      if (faltando.length > 0) {
+        setError(`Preencha o valor da variável {${faltando.join("}, {")}} do template`);
+        return;
+      }
+    }
 
     const when = new Date(scheduledAt);
     if (Number.isNaN(when.getTime()) || when.getTime() <= Date.now()) {
