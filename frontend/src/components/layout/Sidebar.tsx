@@ -10,7 +10,7 @@ import {
   MessageSquare, BookUser,
   Settings, ChevronDown, ChevronRight, ChevronLeft, LogOut,
   Globe, Clock, Webhook, UsersRound, FileText, Volume2, VolumeX, MessageCircle,
-  Tag, Zap, Lock, Smartphone, Key, X, Bell, BellOff, CalendarClock, TrendingUp, DollarSign, Wrench,
+  Tag, Zap, Lock, Smartphone, Key, X, Bell, BellOff, CalendarClock, TrendingUp, DollarSign, Wrench, Bot,
 } from "lucide-react";
 import { subscribePush, unsubscribePush, currentPushState, getPushUnsupportedReason } from "@/lib/push";
 import { useHandoffStore } from "@/store/handoffs";
@@ -23,6 +23,11 @@ const navItems = [
   { href: "/assistencia", icon: Wrench, label: "Assistência" },
   { href: "/contacts", icon: BookUser, label: "Contatos" },
 ];
+
+// Bia Vendas é um sistema externo (HTTP, fora do CRM). Abre em nova aba —
+// nada de iframe (CRM é HTTPS → mixed content bloquearia o destino HTTP).
+// URL vem do build (NEXT_PUBLIC_ pra ser lida no browser); IP não hardcodado.
+const BIA_VENDAS_URL = process.env.NEXT_PUBLIC_BIA_VENDAS_URL || "http://192.168.1.50:8080";
 
 const settingsItems = [
   { href: "/settings/team", icon: UsersRound, label: "Equipe" },
@@ -205,6 +210,21 @@ export default function Sidebar({
               </Link>
             );
           })}
+
+          {/* Bia Vendas — sistema externo, abre em nova aba (não é rota do CRM) */}
+          <a
+            href={BIA_VENDAS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={effectiveCollapsed ? "Bia Vendas" : undefined}
+            className={cn(
+              "flex items-center rounded-xl text-sm font-medium transition text-gray-600 hover:bg-gray-50",
+              effectiveCollapsed ? "justify-center px-2 py-2.5" : "gap-3 px-3 py-2.5"
+            )}
+          >
+            <Bot size={18} />
+            {!effectiveCollapsed && <span className="flex-1">Bia Vendas</span>}
+          </a>
 
           <div>
             <button

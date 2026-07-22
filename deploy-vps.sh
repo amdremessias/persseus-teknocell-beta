@@ -77,6 +77,9 @@ FRONTEND_URL=https://crm.teknoscel.shop
 NEXT_PUBLIC_API_URL=https://crm.teknoscel.shop/api
 NEXT_PUBLIC_WS_URL=wss://crm.teknoscel.shop
 
+# Bia Vendas — sistema externo (link no menu, abre nova aba). Lido no build do frontend.
+NEXT_PUBLIC_BIA_VENDAS_URL=${NEXT_PUBLIC_BIA_VENDAS_URL:-http://192.168.1.50:8080}
+
 # Web Push VAPID
 VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
 VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
