@@ -126,25 +126,40 @@ if ! command -v certbot &>/dev/null; then
   apt-get install -y -qq certbot python3-certbot-nginx
 fi
 
-# fail2ban — aplica jail.local versionado (ignoreip do admin) pra o IP de casa
-# nunca ser banido e travar deploys futuros. Config em /opt/teknos-crm/fail2ban/.
-if ! command -v fail2ban-client &>/dev/null; then
-  echo "  Instalando fail2ban..."
-  apt-get install -y -qq fail2ban || true
-fi
-if [ -f /opt/teknos-crm/fail2ban/jail.local ]; then
-  cp /opt/teknos-crm/fail2ban/jail.local /etc/fail2ban/jail.local
-  systemctl enable fail2ban 2>/dev/null || true
-  systemctl restart fail2ban 2>/dev/null || true
-  # Desbane já o IP do admin, caso esteja banido neste momento
-  fail2ban-client set sshd unbanip 191.37.48.15 2>/dev/null || true
-  echo "  ✓ fail2ban: ignoreip do admin aplicado"
-fi
-
 echo "  ✓ Dependências OK"
 REMOTE
 
 echo "   ✓ VPS preparado"
+
+# ── 3b. fail2ban: ignoreip do admin (evita ban travando deploys) ─────
+# ADMIN_IP vem do .env.deploy (não versionado). Gera o jail.local no VPS a
+# partir dele, reinicia o serviço e desbane o IP se já estiver banido.
+echo "→ Configurando fail2ban (ignoreip do admin)..."
+IGNORE_LINE="127.0.0.1/8 ::1"
+UNBAN_CMD=""
+if [ -n "${ADMIN_IP}" ]; then
+  IGNORE_LINE="${IGNORE_LINE} ${ADMIN_IP}"
+  UNBAN_CMD="fail2ban-client set sshd unbanip ${ADMIN_IP} 2>/dev/null || true"
+fi
+ssh ${VPS_USER}@${VPS_IP} bash << REMOTE
+set -e
+if ! command -v fail2ban-client &>/dev/null; then
+  apt-get install -y -qq fail2ban || true
+fi
+cat > /etc/fail2ban/jail.local << 'F2BEOF'
+[DEFAULT]
+ignoreip = ${IGNORE_LINE}
+
+[sshd]
+enabled = true
+F2BEOF
+systemctl enable fail2ban 2>/dev/null || true
+systemctl restart fail2ban 2>/dev/null || true
+${UNBAN_CMD}
+echo "  ✓ fail2ban: ignoreip = ${IGNORE_LINE}"
+REMOTE
+
+echo "   ✓ fail2ban OK"
 
 # ── 4. Sobe containers ───────────────────────────────────────
 echo "→ [4/6] Subindo Docker Compose..."
