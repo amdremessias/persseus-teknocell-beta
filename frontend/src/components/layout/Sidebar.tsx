@@ -24,10 +24,15 @@ const navItems = [
   { href: "/contacts", icon: BookUser, label: "Contatos" },
 ];
 
-// Bia Vendas é um sistema externo (HTTP, fora do CRM). Abre em nova aba —
+// Bia Vendas são sistemas externos (HTTP, fora do CRM). Abrem em nova aba —
 // nada de iframe (CRM é HTTPS → mixed content bloquearia o destino HTTP).
-// URL vem do build (NEXT_PUBLIC_ pra ser lida no browser); IP não hardcodado.
-const BIA_VENDAS_URL = process.env.NEXT_PUBLIC_BIA_VENDAS_URL || "http://192.168.1.50:8080";
+// URLs vêm do build (NEXT_PUBLIC_ pra ser lidas no browser); IPs não hardcodados.
+//  • loja/LAN → acesso na rede local da loja
+//  • remoto (Tailscale) → acesso de fora via VPN
+const externalLinks = [
+  { url: process.env.NEXT_PUBLIC_BIA_VENDAS_URL || "http://192.168.1.50:8080", icon: Bot, label: "Bia Vendas" },
+  { url: process.env.NEXT_PUBLIC_BIA_VENDAS_REMOTO_URL || "http://100.82.152.83:8080", icon: Globe, label: "Bia Vendas Remoto" },
+];
 
 const settingsItems = [
   { href: "/settings/team", icon: UsersRound, label: "Equipe" },
@@ -211,20 +216,23 @@ export default function Sidebar({
             );
           })}
 
-          {/* Bia Vendas — sistema externo, abre em nova aba (não é rota do CRM) */}
-          <a
-            href={BIA_VENDAS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={effectiveCollapsed ? "Bia Vendas" : undefined}
-            className={cn(
-              "flex items-center rounded-xl text-sm font-medium transition text-gray-600 hover:bg-gray-50",
-              effectiveCollapsed ? "justify-center px-2 py-2.5" : "gap-3 px-3 py-2.5"
-            )}
-          >
-            <Bot size={18} />
-            {!effectiveCollapsed && <span className="flex-1">Bia Vendas</span>}
-          </a>
+          {/* Bia Vendas (loja/LAN e remoto/Tailscale) — sistemas externos, abrem em nova aba */}
+          {externalLinks.map((link) => (
+            <a
+              key={link.label}
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={effectiveCollapsed ? link.label : undefined}
+              className={cn(
+                "flex items-center rounded-xl text-sm font-medium transition text-gray-600 hover:bg-gray-50",
+                effectiveCollapsed ? "justify-center px-2 py-2.5" : "gap-3 px-3 py-2.5"
+              )}
+            >
+              <link.icon size={18} />
+              {!effectiveCollapsed && <span className="flex-1">{link.label}</span>}
+            </a>
+          ))}
 
           <div>
             <button
