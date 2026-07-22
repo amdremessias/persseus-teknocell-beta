@@ -25,7 +25,12 @@ interface Props {
 export default function AdsOriginCard({ ads }: Props) {
   const [expanded, setExpanded] = useState(false);
 
-  const headline = ads.headline?.trim() || null;
+  // A Meta costuma mandar headline como "api.whatsapp.com" (lixo) — o produto de
+  // verdade vem na copy (body). Descarta headline que pareça URL/link do WhatsApp.
+  const rawHeadline = ads.headline?.trim() || null;
+  const headlineIsJunk =
+    !!rawHeadline && (/^https?:\/\//i.test(rawHeadline) || /(?:api\.)?whatsapp\.com|wa\.me/i.test(rawHeadline));
+  const headline = headlineIsJunk ? null : rawHeadline;
   const body = ads.body?.trim() || null;
   const url = ads.source_url?.trim() || null;
   const preview = ads.image_url || ads.thumbnail_url || null;
@@ -69,11 +74,11 @@ export default function AdsOriginCard({ ads }: Props) {
 
           {headline ? (
             <p className="mt-1 text-sm font-semibold text-gray-900 break-words">{headline}</p>
-          ) : (
+          ) : !body ? (
             <p className="mt-1 text-sm text-gray-600">
               O cliente chegou por um anúncio (sem título capturado).
             </p>
-          )}
+          ) : null}
 
           {body && (
             <>
