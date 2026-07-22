@@ -63,6 +63,12 @@ function normalizeReferral(ref) {
     headline:   pick('headline', 'title'),
     body:       pick('body', 'ad_body'),
     source_url: pick('source_url', 'sourceUrl', 'url'),
+    // Mídia da prévia do anúncio (Meta CTWA): image_url quando media_type=image;
+    // video_url + thumbnail_url quando media_type=video. Usado no card do chat.
+    media_type:    pick('media_type', 'mediaType'),
+    image_url:     pick('image_url', 'imageUrl'),
+    video_url:     pick('video_url', 'videoUrl'),
+    thumbnail_url: pick('thumbnail_url', 'thumbnailUrl'),
   };
 }
 

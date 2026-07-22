@@ -114,6 +114,10 @@ async function captureAdsOrigin(lead, referral) {
     ctwa_clid:   referral.ctwa_clid ?? null,
     ...(referral.body ? { body: referral.body } : {}),
     ...(referral.source_type ? { source_type: referral.source_type } : {}),
+    ...(referral.media_type ? { media_type: referral.media_type } : {}),
+    ...(referral.image_url ? { image_url: referral.image_url } : {}),
+    ...(referral.video_url ? { video_url: referral.video_url } : {}),
+    ...(referral.thumbnail_url ? { thumbnail_url: referral.thumbnail_url } : {}),
     detectado_em: new Date().toISOString(),
   };
   const tags = Array.isArray(lead.tags) ? lead.tags : [];

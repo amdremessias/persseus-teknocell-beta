@@ -54,6 +54,10 @@ async function main() {
       ctwa_clid:   ref.ctwa_clid ?? null,
       ...(ref.body ? { body: ref.body } : {}),
       ...(ref.source_type ? { source_type: ref.source_type } : {}),
+      ...(ref.media_type ? { media_type: ref.media_type } : {}),
+      ...(ref.image_url ? { image_url: ref.image_url } : {}),
+      ...(ref.video_url ? { video_url: ref.video_url } : {}),
+      ...(ref.thumbnail_url ? { thumbnail_url: ref.thumbnail_url } : {}),
       detectado_em: ev.criadoEm.toISOString(), // data real do clique, não a de hoje
       backfill: true,
     };

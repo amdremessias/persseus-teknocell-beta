@@ -9,6 +9,7 @@ import { getSocket } from "@/lib/socket";
 import MessageBubble, { type Message } from "@/components/chat/MessageBubble";
 import SuggestedReplies from "@/components/chat/SuggestedReplies";
 import TabInfo from "@/components/chat/TabInfo";
+import AdsOriginCard from "@/components/chat/AdsOriginCard";
 import TabNotas from "@/components/chat/TabNotas";
 import TagModal from "@/components/chat/TagModal";
 import QuickRepliesDropdown from "@/components/chat/QuickRepliesDropdown";
@@ -717,6 +718,9 @@ export default function ChatPanel({ leadId, onBack }: Props) {
       {/* Tab Conversa (preserva conteudo existente intocado) */}
       {tab === "conversa" && (
         <div data-tab="conversa" className="flex flex-col flex-1 overflow-hidden">
+          {lead.metadata?.origem === "ads" && lead.metadata?.ads && (
+            <AdsOriginCard ads={lead.metadata.ads} />
+          )}
           <div ref={messagesRef} className="flex-1 overflow-y-auto p-3">
             {messages.map((msg) => (
               <MessageBubble key={msg.id} msg={msg} />

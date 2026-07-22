@@ -83,12 +83,20 @@ async function buildBiaPayload(lead, canal) {
     ? ''
     : lastMsg.texto;
 
+  // Contexto de anúncio CTWA: quando o lead clicou num anúncio (metadata.origem=ads),
+  // expõe o que o anúncio dizia (headline/body/produto) pra Bia abrir a conversa já
+  // sabendo o interesse, em vez de perguntar "qual produto?". A Bia (n8n) precisa
+  // ler `body.ads` no normalizar_entrada e injetar no prompt — ver relatório.
+  const meta = lead.metadata && typeof lead.metadata === 'object' ? lead.metadata : {};
+  const ads = meta.origem === 'ads' && meta.ads && typeof meta.ads === 'object' ? meta.ads : null;
+
   return {
     leadId: lead.id,
     leadNome: lead.nome || null,
     canal,
     mensagemCliente,
     ...(mediaType ? { mediaType, mediaUrl: lastMsg.mediaUrl } : {}),
+    ...(ads ? { ads } : {}),
     contexto,
   };
 }
