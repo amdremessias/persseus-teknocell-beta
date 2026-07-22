@@ -1,0 +1,13 @@
+# fail2ban — configuração versionada do Teknos CRM.
+# Aplicada no VPS pelo deploy-vps.sh (copiada para /etc/fail2ban/jail.local).
+#
+# Objetivo: NUNCA banir o IP do admin (o deploy usa várias conexões SSH e o
+# fail2ban vinha banindo o IP de casa, travando os deploys seguintes).
+# Se o seu IP mudar, atualize a linha `ignoreip` abaixo e rode o deploy.
+
+[DEFAULT]
+# 127.0.0.1/8 ::1 = loopback; 191.37.48.15 = IP do admin (casa)
+ignoreip = 127.0.0.1/8 ::1 191.37.48.15
+
+[sshd]
+enabled = true

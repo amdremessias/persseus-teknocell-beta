@@ -126,6 +126,21 @@ if ! command -v certbot &>/dev/null; then
   apt-get install -y -qq certbot python3-certbot-nginx
 fi
 
+# fail2ban — aplica jail.local versionado (ignoreip do admin) pra o IP de casa
+# nunca ser banido e travar deploys futuros. Config em /opt/teknos-crm/fail2ban/.
+if ! command -v fail2ban-client &>/dev/null; then
+  echo "  Instalando fail2ban..."
+  apt-get install -y -qq fail2ban || true
+fi
+if [ -f /opt/teknos-crm/fail2ban/jail.local ]; then
+  cp /opt/teknos-crm/fail2ban/jail.local /etc/fail2ban/jail.local
+  systemctl enable fail2ban 2>/dev/null || true
+  systemctl restart fail2ban 2>/dev/null || true
+  # Desbane já o IP do admin, caso esteja banido neste momento
+  fail2ban-client set sshd unbanip 191.37.48.15 2>/dev/null || true
+  echo "  ✓ fail2ban: ignoreip do admin aplicado"
+fi
+
 echo "  ✓ Dependências OK"
 REMOTE
 
