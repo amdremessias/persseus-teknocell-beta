@@ -32,6 +32,18 @@ const OTHER_DEFAULTS = {
   posvenda_template_pv4_name: 'posvenda_upgrade_1',
 };
 
+// Pedido de avaliação no Google — envio ÚNICO extra quando o cliente responde
+// positivamente ao PV1 (janela de 24h aberta → texto livre). Independente da
+// sequência PV1..PV4, que continua normalmente.
+const REVIEW_DEFAULTS = {
+  // Link g.page/r/... da ficha da Teknos no Google. Editável em Configurações.
+  // Se ficar vazio, nada é enviado (só loga) — reenvia quando o link for preenchido.
+  google_review_url: 'https://g.page/r/CZcIIAR_BYBpEAE/review',
+  posvenda_review_msg:
+    'Que bom que deu tudo certo, [nome]! 🎉 Posso te pedir um favorzinho rápido? Deixa uma avaliação da sua experiência com a Teknos aqui no Google: [link] — leva uns 30 segundinhos e ajuda MUITO a gente. Muito obrigado! 🙏',
+  posvenda_review_enabled: 'true', // kill switch sem deploy
+};
+
 // Offsets default (ms, a partir de venda_ts) por estágio PV1..PV4.
 const OFFSETS_DEFAULT_MS = [24, 720, 2160, 4320].map((h) => h * 60 * 60 * 1000);
 
@@ -47,7 +59,7 @@ const WITHIN_24H_MS            = 24 * 60 * 60 * 1000;
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 async function ensureDefaults() {
-  const defaults = { ...PV_DEFAULTS, ...OTHER_DEFAULTS };
+  const defaults = { ...PV_DEFAULTS, ...OTHER_DEFAULTS, ...REVIEW_DEFAULTS };
   for (const [chave, valor] of Object.entries(defaults)) {
     await prisma.setting.upsert({
       where: { chave },
@@ -179,6 +191,102 @@ export async function stopPosVendaForNumber(number) {
     }
   } catch (err) {
     console.error('[posvenda] erro em stopPosVendaForNumber:', err.message);
+  }
+}
+
+// ── Pedido de avaliação no Google (positivo pós-PV1) ──────────────────────────
+
+// case-insensitive, sem acento, colapsa espaços — pra casar padrões de texto.
+function normalizeReview(s) {
+  return (s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Texto exato do botão do template PV1 (poscompra_d1_utility). Match exato → positivo.
+const PV1_BUTTON_NORM = 'esta tudo certo';
+
+const REVIEW_POSITIVE = [
+  'tudo certo', 'tudo bem', 'certinho', 'chegou', 'recebi', 'otimo',
+  'perfeito', 'gostei', 'amei', 'funcionando', 'sim', 'ok', 'obrigad',
+];
+// Qualquer sinal de problema → NÃO é positivo (na dúvida, não manda).
+const REVIEW_NEGATIVE = [
+  'problema', 'defeito', 'nao ', 'ruim', 'ajuda', 'trocar', 'quebr',
+  'travand', 'ainda nao', 'demora', 'reclama',
+];
+
+// Detecção conservadora de resposta positiva ao PV1.
+function isPositiveReview(text) {
+  const norm = normalizeReview(text);
+  if (!norm) return false;
+  if (norm === PV1_BUTTON_NORM) return true;             // clique do botão → positivo
+  if (REVIEW_NEGATIVE.some((p) => norm.includes(p))) return false; // problema → não
+  return REVIEW_POSITIVE.some((p) => norm.includes(p));  // positivo só se casar
+}
+
+// Chamado da ingestão quando o cliente manda uma mensagem (WhatsApp).
+// Envia UMA vez o pedido de avaliação se: PV1 já foi enviado (pv_stage >= 1),
+// a mensagem é claramente positiva, e o review ainda não foi pedido pra esse lead.
+export async function maybeSendReviewRequest({ number, text, leadNome }) {
+  try {
+    if (!number) return;
+    // Kill switch (default true). Null/ausente = habilitado.
+    if ((await readSetting('posvenda_review_enabled')) === 'false') return;
+    if (!isPositiveReview(text)) return;
+
+    // Anti-abuso: no máximo 1 review por lead/número, ever.
+    const already = await prisma.$queryRaw`
+      SELECT 1 FROM pos_venda_followup
+      WHERE number = ${number} AND review_requested_at IS NOT NULL
+      LIMIT 1
+    `;
+    if (already.length > 0) return;
+
+    // Elegível: existe sequência pós-venda desse número com PV1 já enviado.
+    const eligible = await prisma.$queryRaw`
+      SELECT venda_id, lead_id, lead_nome
+      FROM pos_venda_followup
+      WHERE number = ${number} AND pv_stage >= 1
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `;
+    if (eligible.length === 0) return;
+    const row = eligible[0];
+
+    // Link vazio → não envia e NÃO marca (reenvia quando o Danis preencher).
+    const url = (await readSetting('google_review_url')) ?? REVIEW_DEFAULTS.google_review_url;
+    if (!url || !url.trim()) {
+      console.warn(`[posvenda] review positivo de ${number} mas google_review_url vazio — não enviado (será reenviado quando o link for configurado)`);
+      return;
+    }
+
+    const nome = leadNome || row.lead_nome || number;
+    const primeiroNome = nome.split(' ')[0] || nome;
+    const template = (await readSetting('posvenda_review_msg')) || REVIEW_DEFAULTS.posvenda_review_msg;
+    const msg = template
+      .replace(/\[nome\]/gi, primeiroNome)
+      .replace(/\[link\]/gi, url.trim());
+
+    console.log(`[posvenda] review positivo → pedindo avaliação Google para ${number}: "${msg.slice(0, 80)}"`);
+    const result = await sendTextMessage({ to: number, text: msg, canal: 'whatsapp' });
+    if (result === null) {
+      console.warn(`[posvenda] review sendText retornou null para ${number} — não marcado (tentará de novo)`);
+      return;
+    }
+
+    // Marca pra NUNCA repetir pra esse lead.
+    await prisma.$executeRaw`
+      UPDATE pos_venda_followup
+      SET review_requested_at = NOW(), updated_at = NOW()
+      WHERE venda_id = ${row.venda_id}
+    `;
+    console.log(`[posvenda] pedido de avaliação Google enviado e marcado para ${number} (venda=${row.venda_id})`);
+  } catch (err) {
+    console.error('[posvenda] erro em maybeSendReviewRequest:', err.message);
   }
 }
 

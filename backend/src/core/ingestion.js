@@ -6,7 +6,7 @@ import { resolveInstagramName } from '../channels/instagram/profile.js';
 import { downloadMedia } from '../lib/media-downloader.js';
 import { dispatchPush } from '../lib/push.js';
 import { stopFollowupForNumber } from '../services/followup.js';
-import { stopPosVendaForNumber } from '../services/posvenda.js';
+import { stopPosVendaForNumber, maybeSendReviewRequest } from '../services/posvenda.js';
 
 let _io = null;
 
@@ -234,6 +234,9 @@ async function handleIncoming(canal, parsed, rawPayload) {
     if (phone) {
       stopFollowupForNumber(phone).catch(() => {});
       stopPosVendaForNumber(phone).catch(() => {});
+      // Resposta positiva ao PV1 → pedido de avaliação no Google (envio único extra).
+      maybeSendReviewRequest({ number: phone, text: message.text || '', leadNome: lead.nome })
+        .catch(() => {});
     }
   }
 

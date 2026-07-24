@@ -10,6 +10,8 @@ export default function AtendimentoSettingsPage() {
   const { user } = useAuth();
   const [enabled, setEnabled] = useState(true);
   const [template, setTemplate] = useState(DEFAULT_TEMPLATE);
+  const [reviewEnabled, setReviewEnabled] = useState(true);
+  const [reviewUrl, setReviewUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -23,6 +25,12 @@ export default function AtendimentoSettingsPage() {
       if (s.atendente_signature_template) {
         setTemplate(s.atendente_signature_template);
       }
+      if (s.posvenda_review_enabled !== undefined) {
+        setReviewEnabled(s.posvenda_review_enabled !== "false");
+      }
+      if (s.google_review_url !== undefined) {
+        setReviewUrl(s.google_review_url);
+      }
       setLoading(false);
     });
   }, []);
@@ -32,6 +40,8 @@ export default function AtendimentoSettingsPage() {
     await api.put("/api/settings", {
       atendente_signature_enabled: enabled ? "true" : "false",
       atendente_signature_template: template,
+      posvenda_review_enabled: reviewEnabled ? "true" : "false",
+      google_review_url: reviewUrl.trim(),
     });
     setSaving(false);
     setSaved(true);
@@ -111,16 +121,63 @@ export default function AtendimentoSettingsPage() {
             </pre>
           </div>
 
-          {/* Save */}
-          <div className="flex justify-end pt-1">
+        </div>
+
+        {/* Avaliação no Google (pós-venda) */}
+        <div className="bg-white rounded-card shadow-card p-5 space-y-4">
+          <h2 className="text-sm font-semibold text-gray-800">Avaliação no Google (pós-venda)</h2>
+
+          {/* Toggle */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-700 font-medium">Pedir avaliação após resposta positiva</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Quando o cliente responde que deu tudo certo ao primeiro contato do pós-venda, o CRM
+                pede uma avaliação da loja no Google (uma única vez por cliente).
+              </p>
+            </div>
             <button
-              onClick={save}
-              disabled={saving}
-              className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 disabled:opacity-50 transition"
+              onClick={() => setReviewEnabled((v) => !v)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                reviewEnabled ? "bg-green-600" : "bg-gray-300"
+              }`}
             >
-              {saved ? "Salvo ✓" : saving ? "Salvando..." : "Salvar"}
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                  reviewEnabled ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
             </button>
           </div>
+
+          {/* Link */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Link de avaliação do Google
+            </label>
+            <p className="text-xs text-gray-400">
+              Cole o link <code className="bg-gray-100 px-1 rounded">g.page/r/...</code> da ficha da
+              Teknos no Google. Enquanto estiver vazio, nenhum pedido é enviado.
+            </p>
+            <input
+              type="url"
+              value={reviewUrl}
+              onChange={(e) => setReviewUrl(e.target.value)}
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder="https://g.page/r/..."
+            />
+          </div>
+        </div>
+
+        {/* Save */}
+        <div className="flex justify-end pt-1">
+          <button
+            onClick={save}
+            disabled={saving}
+            className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 disabled:opacity-50 transition"
+          >
+            {saved ? "Salvo ✓" : saving ? "Salvando..." : "Salvar"}
+          </button>
         </div>
       </div>
     </div>
