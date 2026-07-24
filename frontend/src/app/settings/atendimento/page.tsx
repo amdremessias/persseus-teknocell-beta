@@ -6,12 +6,19 @@ import { useAuth } from "@/store/auth";
 
 const DEFAULT_TEMPLATE = "*{nome}*\n\n{mensagem}";
 
+const DEFAULT_REVIEW_MSG =
+  "Que bom que deu tudo certo, [nome]! 🎉\n\n" +
+  "Posso te pedir um favorzinho rápido? Deixa uma avaliação da sua experiência com a Teknos aqui no Google (leva uns 30 segundinhos e ajuda MUITO a gente):\n\n" +
+  "[link]\n\n" +
+  "Muito obrigado! 🙏";
+
 export default function AtendimentoSettingsPage() {
   const { user } = useAuth();
   const [enabled, setEnabled] = useState(true);
   const [template, setTemplate] = useState(DEFAULT_TEMPLATE);
   const [reviewEnabled, setReviewEnabled] = useState(true);
   const [reviewUrl, setReviewUrl] = useState("");
+  const [reviewMsg, setReviewMsg] = useState(DEFAULT_REVIEW_MSG);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -31,6 +38,9 @@ export default function AtendimentoSettingsPage() {
       if (s.google_review_url !== undefined) {
         setReviewUrl(s.google_review_url);
       }
+      if (s.posvenda_review_msg) {
+        setReviewMsg(s.posvenda_review_msg);
+      }
       setLoading(false);
     });
   }, []);
@@ -42,6 +52,7 @@ export default function AtendimentoSettingsPage() {
       atendente_signature_template: template,
       posvenda_review_enabled: reviewEnabled ? "true" : "false",
       google_review_url: reviewUrl.trim(),
+      posvenda_review_msg: reviewMsg,
     });
     setSaving(false);
     setSaved(true);
@@ -165,6 +176,26 @@ export default function AtendimentoSettingsPage() {
               onChange={(e) => setReviewUrl(e.target.value)}
               className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
               placeholder="https://g.page/r/..."
+            />
+          </div>
+
+          {/* Mensagem */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Mensagem do pedido de avaliação
+            </label>
+            <p className="text-xs text-gray-400">
+              Use <code className="bg-gray-100 px-1 rounded">[nome]</code> para o primeiro nome do
+              cliente e <code className="bg-gray-100 px-1 rounded">[link]</code> para o link do
+              Google. Deixe o <code className="bg-gray-100 px-1 rounded">[link]</code> sozinho numa
+              linha pra ele ficar clicável no WhatsApp.
+            </p>
+            <textarea
+              value={reviewMsg}
+              onChange={(e) => setReviewMsg(e.target.value)}
+              rows={7}
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder={DEFAULT_REVIEW_MSG}
             />
           </div>
         </div>

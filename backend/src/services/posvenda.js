@@ -39,8 +39,12 @@ const REVIEW_DEFAULTS = {
   // Link g.page/r/... da ficha da Teknos no Google. Editável em Configurações.
   // Se ficar vazio, nada é enviado (só loga) — reenvia quando o link for preenchido.
   google_review_url: 'https://g.page/r/CZcIIAR_BYBpEAE/review',
+  // Link SOZINHO na própria linha — jeito mais confiável do WhatsApp deixar clicável.
   posvenda_review_msg:
-    'Que bom que deu tudo certo, [nome]! 🎉 Posso te pedir um favorzinho rápido? Deixa uma avaliação da sua experiência com a Teknos aqui no Google: [link] — leva uns 30 segundinhos e ajuda MUITO a gente. Muito obrigado! 🙏',
+    'Que bom que deu tudo certo, [nome]! 🎉\n\n' +
+    'Posso te pedir um favorzinho rápido? Deixa uma avaliação da sua experiência com a Teknos aqui no Google (leva uns 30 segundinhos e ajuda MUITO a gente):\n\n' +
+    '[link]\n\n' +
+    'Muito obrigado! 🙏',
   posvenda_review_enabled: 'true', // kill switch sem deploy
 };
 
