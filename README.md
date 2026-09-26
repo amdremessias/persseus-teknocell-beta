@@ -19,8 +19,7 @@ O sistema centraliza conversas do MercadoPhone (WhatsApp) e da Meta (Instagram/M
 
 ## 📁 Estrutura do Projeto
 
-```text
-teknos-crm/
+<pre><code>teknos-crm/
 ├── backend/
 │   ├── src/
 │   │   ├── index.js        # Inicialização do Fastify, Socket.IO e agendador de tarefas
@@ -40,29 +39,103 @@ teknos-crm/
 ├── nginx.conf              # Configuração de referência para o host na VPS
 ├── deploy-vps.sh           # Script automatizado de deploy em produção
 └── .env.deploy.example     # Template das variáveis de ambiente de deploy
-## 💻 Execução Local (com Proxy Reverso)O Nginx (nginx/nginx.conf, com certificado TLS self-signed) atua como ponto único de entrada: o acesso via https://mordorlab.internal.lan redireciona para o frontend e faz o proxy das chamadas /api/*, /socket.io/* e /health para o backend, garantindo funcionamento sob origem única sem conflitos de CORS ou cookies.1. Mapeamento no ficheiro HostsAdiciona a seguinte entrada ao teu ficheiro de hosts (C:\Windows\System32\drivers\etc\hosts no Windows ou /etc/hosts no Linux/Mac):Plaintext192.168.5.54 mordorlab.internal.lan
-2. Comandos de InicializaçãoGerar o certificado TLS Self-Signed (executar uma única vez):PowerShelldocker run --rm -v "$PWD/nginx/certs:/certs" nginx:1.27-alpine sh -c \
-"apk add --no-cache openssl >/dev/null 2>&1; \
-openssl req -x509 -newkey rsa:2048 -nodes -sha256 -days 825 \
--keyout /certs/privkey.pem -out /certs/fullchain.pem \
--subj '/CN=mordorlab.internal.lan' \
--addext 'subjectAltName=IP:127.0.0.1,IP:192.168.5.54,DNS:localhost,DNS:mordorlab.internal.lan,DNS:crm.teknosCEL.shop,DNS:n8n.teknosCEL.shop'"
-Reconstruir o Frontend (sempre que alterar variáveis de ambiente):PowerShelldocker compose build frontend
-Subir a stack completa com Proxy Reverso:PowerShelldocker compose -f docker-compose.yml -f docker-compose.proxy.yml up -d
-Acesso: Abre no teu navegador https://mordorlab.internal.lan. Para evitar avisos de certificado no navegador, importa o ficheiro nginx/certs/fullchain.pem como Autoridade de Certificação Raiz Confiável.
-## 🔀 Rotas Mapeadas no Proxy LocalRota (https://mordorlab.internal.lan)Serviço Alvo/Frontend (Next.js - :3000)/api/*Backend (Fastify - :3001), inclui uploads e webhooks/socket.io/*Backend — Conexões Socket.IO (WebSockets / Polling)/healthBackend — Health CheckPainéis Administrativos: Acessíveis diretamente sem passar pelo proxy:n8n: http://mordorlab.internal.lan:5678WAHA: http://mordorlab.internal.lan:3002⚙️ Alternativas de Execução LocalOpção A — Docker Sem Proxy (Acesso por Portas Diretas)PowerShelldocker compose up --build
-Opção B — Execução Manual (Desenvolvimento Local sem Docker)Requer instâncias ativas de PostgreSQL e Redis no sistema.PowerShell# 1. Configurar e rodar o Backend
-cd backend
-cp .env.example .env   # Ajusta as credenciais de banco e redis
-npm install
-npm run db:migrate     # Aplica as migrations do Prisma
-npm run db:seed        # Cria utilizador admin inicial
-npm run dev            # Servidor ativo na porta 3001
+</code></pre>
 
-# 2. Configurar e rodar o Frontend (noutro terminal)
+---
+
+## 💻 Execução Local (com Proxy Reverso)
+
+O Nginx (`nginx/nginx.conf`, com certificado TLS self-signed) atua como **ponto único de entrada**: o acesso via `https://mordorlab.internal.lan` redireciona para o frontend e faz o proxy das chamadas `/api/*`, `/socket.io/*` e `/health` para o backend, garantindo funcionamento sob **origem única** sem conflitos de CORS ou cookies.
+
+### 1. Mapeamento no ficheiro Hosts
+Adiciona a seguinte entrada ao teu ficheiro de hosts (`C:\Windows\System32\drivers\etc\hosts` no Windows ou `/etc/hosts` no Linux/Mac):
+
+`192.168.5.54 mordorlab.internal.lan`
+
+### 2. Comandos de Inicialização
+
+1. **Gerar o certificado TLS Self-Signed (executar uma única vez):**
+docker run --rm -v "$PWD/nginx/certs:/certs" nginx:1.27-alpine sh -c "apk add --no-cache openssl >/dev/null 2>&1; openssl req -x509 -newkey rsa:2048 -nodes -sha256 -days 825 -keyout /certs/privkey.pem -out /certs/fullchain.pem -subj '/CN=mordorlab.internal.lan' -addext 'subjectAltName=IP:127.0.0.1,IP:192.168.5.54,DNS:localhost,DNS:mordorlab.internal.lan,DNS:crm.teknosCEL.shop,DNS:n8n.teknosCEL.shop'"
+
+
+2. **Reconstruir o Frontend (sempre que alterar variáveis de ambiente):**
+docker compose build frontend
+
+
+3. **Subir a stack completa com Proxy Reverso:**
+docker compose -f docker-compose.yml -f docker-compose.proxy.yml up -d
+
+
+> **Acesso:** Abre no teu navegador `https://mordorlab.internal.lan`. Para evitar avisos de certificado no navegador, importa o ficheiro `nginx/certs/fullchain.pem` como Autoridade de Certificação Raiz Confiável.
+
+---
+
+## 🔀 Rotas Mapeadas no Proxy Local
+
+| Rota (`https://mordorlab.internal.lan`) | Serviço Alvo |
+| :--- | :--- |
+| `/` | **Frontend** (Next.js - `:3000`) |
+| `/api/*` | **Backend** (Fastify - `:3001`), inclui uploads e webhooks |
+| `/socket.io/*` | **Backend** — Conexões Socket.IO (WebSockets / Polling) |
+| `/health` | **Backend** — Health Check |
+
+> **Painéis Administrativos:** Acessíveis diretamente sem passar pelo proxy:
+> - **n8n:** `http://mordorlab.internal.lan:5678`
+> - **WAHA:** `http://mordorlab.internal.lan:3002`
+
+---
+
+## ⚙️ Alternativas de Execução Local
+
+### Opção A — Docker Sem Proxy (Acesso por Portas Diretas)
+
+docker compose up --build
+
+
+### Opção B — Execução Manual (Desenvolvimento Local sem Docker)
+*Requer instâncias ativas de PostgreSQL e Redis no sistema.*
+
+**Backend:**
+cd backend
+cp .env.example .env
+npm install
+npm run db:migrate
+npm run db:seed
+npm run dev
+
+
+**Frontend:**
 cd frontend
 npm install
-npm run dev            # Aplicação ativa na porta 3000
-🌐 Deploy em Produção (VPS)As configurações de produção e segredos são mantidas fora do controlo de versões no ficheiro .env.deploy (ignorado no Git). O script deploy-vps.sh carrega estas informações e provisiona o ambiente na VPS.PowerShellcp .env.deploy.example .env.deploy   # Preenche com os dados reais de produção
+npm run dev
+
+
+---
+
+## 🌐 Deploy em Produção (VPS)
+
+As configurações de produção e segredos são mantidas fora do controlo de versões no ficheiro `.env.deploy` (ignorado no Git). O script `deploy-vps.sh` carrega estas informações e provisiona o ambiente na VPS.
+
+cp .env.deploy.example .env.deploy
 bash deploy-vps.sh
-Ações Executadas pelo Script de Deploy:Sincronização do código fonte com a VPS via rsync.Geração automática do ficheiro .env no servidor.Inicialização dos containers Docker e aplicação das migrations (prisma migrate deploy).Configuração do Nginx no servidor e emissão/renovação de certificados SSL via Certbot.🔌 Tabela de PortasServiçoPortaDescriçãoNginx Proxy80 / 443Proxy Reverso e terminação SSL/TLSFrontend3000Interface do utilizadorBackend3001API REST e WebSocketsn8n5678Painel de automação de fluxos com IAWAHA3002API e Dashboard do WhatsAppPostgreSQL5432Base de dados relacionalRedis6379Cache de sessão e filas
+
+
+### Ações Executadas pelo Script de Deploy:
+1. Sincronização do código fonte com a VPS via `rsync`.
+2. Geração automática do ficheiro `.env` no servidor.
+3. Inicialização dos containers Docker e aplicação das migrations (`prisma migrate deploy`).
+4. Configuração do Nginx no servidor e emissão/renovação de certificados SSL via Certbot.
+
+---
+
+## 🔌 Tabela de Portas
+
+| Serviço | Porta | Descrição |
+| :--- | :--- | :--- |
+| **Nginx Proxy** | `80` / `443` | Proxy Reverso e terminação SSL/TLS |
+| **Frontend** | `3000` | Interface do utilizador |
+| **Backend** | `3001` | API REST e WebSockets |
+| **n8n** | `5678` | Painel de automação de fluxos com IA |
+| **WAHA** | `3002` | API e Dashboard do WhatsApp |
+| **PostgreSQL**| `5432` | Base de dados relacional |
+| **Redis** | `6379` | Cache de sessão e filas |
