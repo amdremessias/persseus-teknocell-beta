@@ -48,6 +48,14 @@ export default async function webhookRoutes(fastify) {
       .catch(err => console.error('[webhook:whatsapp]', err.message));
   });
 
+  // ── WAHA (WhatsApp HTTP API) ────────────────────────────────────────────
+  fastify.post('/api/webhooks/waha', async (req, reply) => {
+    reply.code(200).send({ ok: true }); // responde ANTES de processar
+
+    ingestMessage('whatsapp', req.body)
+      .catch(err => console.error('[webhook:waha]', err.message));
+  });
+
   // ── Instagram ────────────────────────────────────────────────────────────
   fastify.get('/api/webhooks/instagram', async (req, reply) => {
     return verifyMetaChallenge(req, reply, 'META_VERIFY_TOKEN_INSTAGRAM');
@@ -124,9 +132,12 @@ export default async function webhookRoutes(fastify) {
         if (humano !== undefined) biaData.humano = humano;
         if (resumo !== undefined) biaData.resumo_bia = resumo;
         if (Object.keys(biaData).length > 0) {
+          // Merge, nunca substitui — preserva estado do menu (menu_atendimento) e outros campos.
+          const current = await prisma.lead.findUnique({ where: { id: lead_id }, select: { metadata: true } });
+          const existing = current?.metadata && typeof current.metadata === 'object' ? current.metadata : {};
           await prisma.lead.update({
             where: { id: lead_id },
-            data: { metadata: biaData },
+            data: { metadata: { ...existing, ...biaData } },
           }).catch(err => console.warn('[webhook:bia] metadata update failed:', err.message));
         }
       }

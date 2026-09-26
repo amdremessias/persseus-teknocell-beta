@@ -96,6 +96,9 @@ export default async function integrationRoutes(fastify) {
     let url = null;
     if (scope === "bia") url = getSetting("BIA_WEBHOOK_URL");
     else if (scope === "n8n") url = getSetting("N8N_BIA_URL");
+    else if (scope === "waha") {
+      url = `${(getSetting("WAHA_URL") || "").replace(/\/+$/, "")}/ping`;
+    }
     else if (scope === "mercadophone-jwt") {
       const jwt = getSetting("MERCADOPHONE_JWT");
       if (!jwt) return reply.code(400).send({ ok: false, error: "MERCADOPHONE_JWT não configurado" });

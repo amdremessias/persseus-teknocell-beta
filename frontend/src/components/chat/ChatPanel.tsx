@@ -565,6 +565,12 @@ export default function ChatPanel({ leadId, onBack }: Props) {
               {lead.nome || "Lead sem nome"}
             </button>
             <p className="text-xs text-gray-400 flex items-center gap-1.5 flex-wrap">
+              {lead.tickets?.[0]?.numero != null && (
+                <>
+                  <span className="font-semibold text-gray-600">🎫 #{String(lead.tickets[0].numero).padStart(4, "0")}</span>
+                  <span className="text-gray-300">·</span>
+                </>
+              )}
               <span>{lead.telefone || "—"}</span>
               <span className="text-gray-300">·</span>
               <span>{canalLabel}</span>

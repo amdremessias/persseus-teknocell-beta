@@ -7,6 +7,9 @@ import { downloadMedia } from '../lib/media-downloader.js';
 import { dispatchPush } from '../lib/push.js';
 import { stopFollowupForNumber } from '../services/followup.js';
 import { stopPosVendaForNumber, maybeSendReviewRequest } from '../services/posvenda.js';
+import { handleMenuAtendimento } from '../services/menuAtendimento.js';
+import { ensureOpenTicket, isLeadFinalizado, reopenFinalizedLead } from '../services/tickets.js';
+import { clearHandoffPendente } from '../services/handoffWatch.js';
 
 let _io = null;
 
@@ -39,6 +42,12 @@ export async function ingestMessage(canal, rawPayload) {
     case 'lifecycle': return handleLifecycle(canal, parsed, rawPayload);
     case 'incoming':  return handleIncoming(canal, parsed, rawPayload);
     case 'echo':      return handleEcho(canal, parsed, rawPayload);
+    case 'waha_session': {
+      console.log(`[waha] evento de sessao "${parsed.status ?? ''}" (${parsed.session ?? ''})`);
+      return { skipped: true, reason: 'session_event' };
+    }
+    case 'waha_group_skipped':
+      return { skipped: true, reason: 'group_message' };
     default:
       console.warn(`[ingestion] kind desconhecido "${parsed.rawAcao}" — ignorado`);
       return { skipped: true, reason: 'unknown_kind' };
@@ -159,6 +168,12 @@ async function handleLifecycle(canal, parsed, rawPayload) {
   lead = await captureAdsOrigin(lead, parsed.referral);
   await prisma.webhookEvent.update({ where: { id: webhookEvent.id }, data: { processed: true } });
 
+  // Novo contato: abre o ticket de protocolo já no start (número sequencial).
+  if (effectiveCanal === 'whatsapp') {
+    const { ticket, isNew } = await ensureOpenTicket({ leadId: lead.id, canal: effectiveCanal }).catch(() => ({ ticket: null, isNew: false }));
+    if (isNew) console.log(`[ingestion:lifecycle] novo ticket #${ticket?.numero} lead=${lead.id}`);
+  }
+
   if (_io) {
     _io.emit('lead:updated', { id: lead.id, atualizadoEm: new Date() });
     _io.emit('lead:new', { id: lead.id, nome: lead.nome, canal });
@@ -251,16 +266,47 @@ async function handleIncoming(canal, parsed, rawPayload) {
     });
   }
 
-  // Só dispara BIA se BIA_MODE=active (default é observer).
+  // Menu de atendimento roda ANTES da BIA: enquanto o fluxo de menu consome a
+  // mensagem (opção inválida, coleta, handoff...), a BIA não é acionada.
+  // Se o lead voltou a falar DEPOIS de finalizado, reabre com novo ticket e
+  // force o menu a reiniciar as boas-vindas (reaberto=true).
+  let menuHandled = false;
+  if (effectiveCanal === 'whatsapp') {
+    const reaberto = isLeadFinalizado(lead);
+    let leadParaMenu = lead;
+
+    if (reaberto) {
+      clearHandoffPendente(lead.id).catch(() => {});
+      leadParaMenu = await reopenFinalizedLead({ lead, canal: effectiveCanal });
+      if (_io) _io.emit('lead:updated', { id: lead.id, statusPipeline: 'novo', dataArquivamento: null, atualizadoEm: new Date() });
+      console.log(`[ingestion:incoming] conversa finalizada reaberta: ${lead.id}`);
+    } else {
+      const { ticket, isNew } = await ensureOpenTicket({ leadId: lead.id, canal: effectiveCanal }).catch(() => ({ ticket: null, isNew: false }));
+      if (isNew) console.log(`[ingestion:incoming] novo ticket #${ticket?.numero} lead=${lead.id}`);
+    }
+
+    const menuResult = await handleMenuAtendimento({ lead: leadParaMenu, texto: message.text || '', io: _io, reaberto })
+      .catch(err => {
+        console.error('[ingestion:incoming] handleMenuAtendimento error:', err.message);
+        return { handled: false };
+      });
+    menuHandled = !!menuResult?.handled;
+  }
+
+  // Só dispara BIA se BIA_MODE=active (default é observer) e o menu não consumiu.
   // Instagram cai pra atendente humano por padrão — a Bia no IG fica atrás do
   // switch BIA_INSTAGRAM_ENABLED (decisão de ligar é de produto, default off).
   const biaMode = getSetting('BIA_MODE', 'observer');
   const biaCanalOk = effectiveCanal === 'whatsapp' || getSettingBool('BIA_INSTAGRAM_ENABLED', false);
-  if (biaMode === 'active' && lead.biaAtiva && biaCanalOk) {
-    setImmediate(() => {
-      scheduleBiaDispatch(lead, effectiveCanal)
-        .catch(err => console.error('[ingestion:incoming] scheduleBiaDispatch error:', err.message));
-    });
+  if (biaMode === 'active' && !menuHandled && lead.biaAtiva && biaCanalOk) {
+    // Recarrega o lead (o menu pode ter desligado biaAtiva ou mudado metadata)
+    prisma.lead.findUnique({ where: { id: lead.id } })
+      .then(fresh => {
+        if (!fresh?.biaAtiva) return;
+        scheduleBiaDispatch(fresh, effectiveCanal)
+          .catch(err => console.error('[ingestion:incoming] scheduleBiaDispatch error:', err.message));
+      })
+      .catch(err => console.error('[ingestion:incoming] refresh lead error:', err.message));
   }
 
   return { lead, message: msg, kind: 'incoming' };

@@ -19,9 +19,17 @@ npm-debug.log*
 # OS
 .DS_Store
 
+# Banco local da demo de memória da BIA (gerado pelo fluxo n8n)
+n8n-workflows/*.db
+
+# Certificados self-signed do nginx reverso local (proxy)
+nginx/certs/
+
 # Dados de vendas retroativas — PII de clientes (nomes/telefones), não versionar
 docs/*.csv
 docs/*.xlsx
 docs/*.pdf
 docs/*.txt
 docs/*.json
+
+*.7z

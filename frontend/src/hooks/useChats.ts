@@ -9,6 +9,12 @@ export interface ChatTag {
   cor: string;
 }
 
+export interface ChatQueue {
+  id: string;
+  nome: string;
+  cor?: string | null;
+}
+
 export interface ChatLastMessage {
   texto: string;
   criadoEm: string;
@@ -30,6 +36,9 @@ export interface ChatItem {
   tags: (ChatTag | string)[];
   pinned: boolean;
   notesCount: number;
+  fila?: ChatQueue | null;
+  ticketNumero?: number | null;
+  ticketStatus?: string | null;
 }
 
 export interface UseChatsParams {
@@ -38,6 +47,8 @@ export interface UseChatsParams {
   tagId?: string;
   search?: string;
   assistencia?: boolean;
+  queueId?: string;
+  finalizadas?: boolean;
 }
 
 export function useChats(params: UseChatsParams = {}, skip = false) {
@@ -56,6 +67,8 @@ export function useChats(params: UseChatsParams = {}, skip = false) {
       if (params.tagId) query.tagId = params.tagId;
       if (params.search) query.search = params.search;
       if (params.assistencia) query.assistencia = "1";
+      if (params.queueId) query.queueId = params.queueId;
+      if (params.finalizadas) query.finalizadas = "1";
       const { data } = await api.get("/chats", { params: query });
       setItems(data.items);
       setTotal(data.total);

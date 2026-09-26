@@ -13,13 +13,15 @@ export default async function chatRoutes(fastify) {
   const auth = { onRequest: [fastify.authenticate] };
 
   fastify.get("/api/chats", auth, async (req) => {
-    const { canal, atendenteId, tagId, search, assistencia, limit = 50, offset = 0 } = req.query;
+    const { canal, atendenteId, tagId, search, assistencia, queueId, finalizadas, limit = 50, offset = 0 } = req.query;
     const take = Math.min(Number(limit) || 50, 200);
     const skip = Number(offset) || 0;
+    const showFinalizadas = finalizadas === "1" || finalizadas === "true" || finalizadas === "yes";
 
     const where = {};
     if (canal) where.canal = canal;
     if (atendenteId) where.atendenteId = atendenteId;
+    if (queueId) where.queueAssignments = { some: { queueId } };
     if (tagId) where.leadTags = { some: { tagId } };
     // Assistência: leads marcados pela Bia (campo legado `tags`) OU pela tag relacional "Assistência"
     if (assistencia) {
@@ -42,6 +44,32 @@ export default async function chatRoutes(fastify) {
       }
     }
 
+    // Conversas finalizadas (arquivadas/convertidas/perdidas) saem da lista ativa
+    // e só aparecem na aba "Finalizadas" (?finalizadas=1).
+    const finalCond = {
+      OR: [
+        { statusPipeline: { in: [...FINALIZED_STATUSES] } },
+        { dataArquivamento: { not: null } },
+      ],
+    };
+    if (showFinalizadas) {
+      if (where.OR) {
+        if (where.AND) where.AND = [...where.AND, finalCond];
+        else where.AND = [{ OR: where.OR }, finalCond];
+        delete where.OR;
+      } else {
+        where.AND = [...(where.AND || []), finalCond];
+      }
+    } else {
+      const notFinalCond = { NOT: finalCond };
+      if (where.AND) where.AND = [...where.AND, notFinalCond];
+      else where.AND = [notFinalCond];
+      if (where.OR) {
+        where.AND = [...where.AND, { OR: where.OR }];
+        delete where.OR;
+      }
+    }
+
     const leads = await prisma.lead.findMany({
       where,
       orderBy: { atualizadoEm: "desc" },
@@ -49,6 +77,12 @@ export default async function chatRoutes(fastify) {
       skip,
       include: {
         atendente: { select: { id: true, nome: true } },
+        queueAssignments: {
+          take: 1,
+          orderBy: { atribuidoEm: "desc" },
+          include: { queue: { select: { id: true, nome: true, cor: true } } },
+        },
+        tickets: { take: 1, orderBy: { abertoEm: "desc" }, select: { numero: true, status: true } },
         messages: {
           take: 1,
           orderBy: { criadoEm: "desc" },
@@ -103,10 +137,15 @@ export default async function chatRoutes(fastify) {
           unreadCount,
           status: computeStatus(lead),
           atendenteAtual: lead.atendente,
+          fila: lead.queueAssignments?.[0]?.queue
+            ? lead.queueAssignments[0].queue
+            : (lead.metadata && typeof lead.metadata === 'object' && lead.metadata.fila) || null,
           biaAtiva: lead.biaAtiva,
           tags: tagsFull.length > 0 ? tagsFull : (lead.tags || []),
           pinned: !!lead.pin,
           notesCount,
+          ticketNumero: lead.tickets?.[0]?.numero ?? null,
+          ticketStatus: lead.tickets?.[0]?.status ?? null,
         };
       })
     );

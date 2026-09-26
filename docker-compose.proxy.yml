@@ -1,0 +1,18 @@
+# Overlay LOCAL — nginx reverso com TLS self-signed na frente da stack.
+# Uso:  docker compose -f docker-compose.yml -f docker-compose.proxy.yml up -d
+# Este arquivo NÃO é usado no deploy da VPS (deploy-vps.sh mantém o nginx do host).
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: teknos_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - frontend
+      - backend

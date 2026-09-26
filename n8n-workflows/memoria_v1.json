@@ -1,5 +1,6 @@
 {
   "name": "memoria_v1",
+  "id": "33333333-3333-4333-8333-333333333333",
   "active": false,
   "tags": [{ "name": "BIA_V3" }, { "name": "phase2" }],
   "settings": { "executionOrder": "v1" },
@@ -34,6 +35,7 @@
     },
     {
       "id": "node-m010-0000-0000-000000000010",
+      "webhookId": "a1b2c3d4-3333-4e5f-8a9b-000000000033",
       "name": "webhook_memoria",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -46,8 +48,8 @@
         "options": {}
       },
       "credentials": {
-        "headerAuth": {
-          "id": "",
+        "httpHeaderAuth": {
+          "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
           "name": "BIA Secret - Webhook"
         }
       }
@@ -82,17 +84,18 @@
       "position": [620, 380],
       "parameters": {
         "method": "PATCH",
-        "url": "=https://crm.teknoscel.shop/api/leads/{{ $json.lead_id }}/resumo",
+        "url": "=http://backend:3001/api/leads/{{ $json.lead_id }}/resumo",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "contentType": "json",
-        "body": "={{ JSON.stringify({ resumo: $json.resumo }) }}",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ resumo: $json.resumo }) }}",
         "options": { "timeout": 8000 }
       },
       "credentials": {
         "httpHeaderAuth": {
-          "id": "",
+          "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
           "name": "BIA Secret - CRM"
         }
       }

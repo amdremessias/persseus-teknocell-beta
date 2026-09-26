@@ -8,22 +8,121 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  nome        String
-  email       String   @unique
-  senhaHash   String   @map("senha_hash")
-  nivel       UserNivel @default(atendente)
-  ativo       Boolean  @default(true)
-  criadoEm    DateTime @default(now()) @map("criado_em")
+  id               String    @id @default(cuid())
+  nome             String
+  email            String    @unique
+  senhaHash        String    @map("senha_hash")
+  nivel            UserNivel @default(atendente)
+  ativo            Boolean   @default(true)
+  criadoEm         DateTime  @default(now()) @map("criado_em")
+  avatarUrl        String?   @map("avatar_url")
+  permissions      Json?     @default("[]")
+  lastPasswordChange DateTime? @map("last_password_change")
+  passwordResetToken String?  @map("password_reset_token")
+  passwordResetExpires DateTime? @map("password_reset_expires")
 
-  leads             Lead[]
-  queueAssignments  QueueAssignment[]
-  notes             LeadNote[]
-  quickReplies      QuickReply[]
-  refreshTokens     RefreshToken[]
-  pushSubscriptions PushSubscription[]
+  leads              Lead[]
+  queueAssignments   QueueAssignment[]
+  notes              LeadNote[]
+  quickReplies       QuickReply[]
+  refreshTokens      RefreshToken[]
+  pushSubscriptions  PushSubscription[]
+  teamMemberships    TeamMember[]
+  queueMemberships   QueueMember[]
+  whatsappChannels   WhatsAppChannel[]
 
   @@map("users")
+}
+
+model Team {
+  id          String    @id @default(cuid())
+  nome        String    @unique
+  descricao   String?
+  cor         String    @default("#1B5E20")
+  ativo       Boolean   @default(true)
+  criadoEm    DateTime  @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  members     TeamMember[]
+  queues      AttendanceQueue[]
+
+  @@map("teams")
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  teamId    String   @map("team_id")
+  userId    String   @map("user_id")
+  papel     String   @default("membro")
+  criadoEm  DateTime @default(now()) @map("criado_em")
+
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@map("team_members")
+}
+
+model AttendanceQueue {
+  id                    String                 @id @default(cuid())
+  nome                  String                 @unique
+  descricao             String?
+  cor                   String                 @default("#1B5E20")
+  ativa                 Boolean                @default(true)
+  horarioInicio         String?                @map("horario_inicio")
+  horarioFim            String?                @map("horario_fim")
+  diasSemana            Int[]                  @default([1,2,3,4,5])
+  estrategiaAtribuicao  QueueAssignmentStrategy @default(round_robin) @map("estrategia_atribuicao")
+  maxLeadsPorAtendente  Int?                   @default(20) @map("max_leads_por_atendente")
+  timeoutSegundos       Int                    @default(120) @map("timeout_segundos")
+  teamId                String?                @map("team_id")
+  criadoEm              DateTime               @default(now()) @map("criado_em")
+  atualizadoEm          DateTime               @updatedAt @map("atualizado_em")
+
+  members               QueueMember[]
+  team                  Team?                  @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  assignments           QueueAssignment[]
+
+  @@map("attendance_queues")
+}
+
+model QueueMember {
+  id          String      @id @default(cuid())
+  queueId     String      @map("queue_id")
+  userId      String      @map("user_id")
+  profile     QueueProfile @default(atendente)
+  prioridade  Int         @default(0)
+  ativo       Boolean     @default(true)
+  criadoEm    DateTime    @default(now()) @map("criado_em")
+
+  queue       AttendanceQueue @relation(fields: [queueId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([queueId, userId])
+  @@map("queue_members")
+}
+
+model WhatsAppChannel {
+  id              String                @id @default(cuid())
+  nome            String
+  phoneNumberId   String?               @unique @map("phone_number_id")
+  wabaId          String?               @map("waba_id")
+  businessAccountId String?             @map("business_account_id")
+  accessToken     String?               @map("access_token")
+  status          WhatsAppChannelStatus @default(pending)
+  qrCode          String?               @map("qr_code")
+  qrCodeExpires   DateTime?             @map("qr_code_expires")
+  lastConnected   DateTime?             @map("last_connected")
+  webhookUrl      String?               @map("webhook_url")
+  webhookVerifyToken String?            @map("webhook_verify_token")
+  config          Json                  @default("{}")
+  criadoPorId     String                @map("criado_por_id")
+  criadoEm        DateTime              @default(now()) @map("criado_em")
+  atualizadoEm    DateTime              @updatedAt @map("atualizado_em")
+
+  criadoPor       User                  @relation(fields: [criadoPorId], references: [id])
+
+  @@map("whatsapp_channels")
 }
 
 model PushSubscription {
@@ -97,9 +196,29 @@ model Lead {
   notes            LeadNote[]
   vendas           Venda[]
   scheduledMessages ScheduledMessage[]
+  tickets          Ticket[]
 
   @@unique([canal, identifierCanal], name: "lead_canal_identifier_uk")
   @@map("leads")
+}
+
+model Ticket {
+  id           String    @id @default(cuid())
+  numero       Int       @unique @default(autoincrement())
+  leadId       String    @map("lead_id")
+  canal        String    @default("whatsapp")
+  assunto      String?
+  fila         String?
+  atendenteId  String?   @map("atendente_id")
+  status       String    @default("aberto") // aberto | finalizado
+  abertoEm     DateTime  @default(now()) @map("aberto_em")
+  finalizadoEm DateTime? @map("finalizado_em")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, status])
+  @@index([status])
+  @@map("tickets")
 }
 
 model ScheduledMessage {
@@ -242,12 +361,14 @@ model QueueAssignment {
   id          String    @id @default(cuid())
   leadId      String    @map("lead_id")
   atendenteId String    @map("atendente_id")
+  queueId     String?   @map("queue_id")
   atribuidoEm DateTime  @default(now()) @map("atribuido_em")
   assumidoEm  DateTime? @map("assumido_em")
   timeoutEm   DateTime? @map("timeout_em")
 
-  lead      Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  atendente User @relation(fields: [atendenteId], references: [id])
+  lead        Lead                  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  atendente   User                  @relation(fields: [atendenteId], references: [id])
+  queue       AttendanceQueue?      @relation(fields: [queueId], references: [id], onDelete: SetNull)
 
   @@map("queue_assignments")
 }
@@ -358,4 +479,25 @@ enum MessageTipo {
   bia
   atendente
   interno
+}
+
+enum QueueProfile {
+  atendente
+  supervisor
+  gestor
+}
+
+enum QueueAssignmentStrategy {
+  round_robin
+  least_busy
+  skill_based
+  manual
+}
+
+enum WhatsAppChannelStatus {
+  pending
+  connected
+  disconnected
+  banned
+  expired
 }

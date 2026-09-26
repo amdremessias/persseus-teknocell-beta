@@ -4,7 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { Copy, Check, AlertTriangle, Tag, Zap, MessageCircle } from "lucide-react";
 
-const BASE = "https://crm.teknoscel.shop";
+// Base derivada do build — mostra o CORPO real do ambiente em uso (local = backend local; prod = dominio real)
+const apiBase: string = process.env.NEXT_PUBLIC_API_URL || "/api";
+const BASE: string = apiBase.replace(/\/+$/, "").replace(/\/api$/i, "");
 
 const ENDPOINTS = [
   {

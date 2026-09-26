@@ -1,4 +1,4 @@
-{
+{"id":"44444444-4444-4444-8444-444444444444",
   "name": "followup_v1",
   "active": false,
   "tags": [{ "name": "BIA_V3" }, { "name": "phase2" }],
@@ -57,7 +57,7 @@
       "position": [360, 380],
       "parameters": {
         "method": "GET",
-        "url": "https://crm.teknoscel.shop/api/leads?status=aguardando&followup_elegivel=true&limit=50",
+        "url": "http://backend:3001/api/leads?status=aguardando&followup_elegivel=true&limit=50",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": { "timeout": 10000 }
@@ -87,7 +87,7 @@
       "position": [880, 380],
       "parameters": {
         "method": "POST",
-        "url": "https://n8n.teknoscel.shop/webhook/bia-teknos",
+        "url": "http://n8n:5678/webhook/bia-teknos",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,

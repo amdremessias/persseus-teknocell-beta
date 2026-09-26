@@ -38,10 +38,10 @@ function ChatsPageInner() {
 
   return (
     // Mobile: single column (one panel at a time).  Desktop: unchanged 2-column grid.
-    <div className="h-full overflow-hidden md:grid md:grid-cols-[320px_1fr]">
+    <div className="h-full overflow-hidden md:grid md:grid-cols-[320px_1fr] md:grid-rows-[minmax(0,1fr)]">
       {/* Conversation list — visible on mobile only when no conversation is open */}
       <div className={cn(
-        "h-full flex flex-col overflow-hidden",
+        "h-full min-h-0 flex flex-col overflow-hidden",
         selected ? "hidden md:flex" : "flex"
       )}>
         <ConversationList selectedId={selected} onSelect={handleSelect} />
@@ -49,7 +49,7 @@ function ChatsPageInner() {
 
       {/* Chat panel — visible on mobile only when a conversation is selected */}
       <section className={cn(
-        "h-full bg-white overflow-hidden border-l border-gray-100 flex flex-col",
+        "h-full min-h-0 bg-white overflow-hidden border-l border-gray-100 flex flex-col",
         !selected ? "hidden md:flex" : "flex"
       )}>
         {selected ? (

@@ -11,6 +11,7 @@ import {
   Settings, ChevronDown, ChevronRight, ChevronLeft, LogOut,
   Globe, Clock, Webhook, UsersRound, FileText, Volume2, VolumeX, MessageCircle,
   Tag, Zap, Lock, Smartphone, Key, X, Bell, BellOff, CalendarClock, TrendingUp, DollarSign, Wrench, Bot,
+  Network, ListOrdered,
 } from "lucide-react";
 import { subscribePush, unsubscribePush, currentPushState, getPushUnsupportedReason } from "@/lib/push";
 import { useHandoffStore } from "@/store/handoffs";
@@ -35,7 +36,9 @@ const externalLinks = [
 ];
 
 const settingsItems = [
-  { href: "/settings/team", icon: UsersRound, label: "Equipe" },
+  { href: "/settings/team", icon: UsersRound, label: "Equipe", adminOnly: true },
+  { href: "/settings/groups", icon: Network, label: "Grupos", adminOnly: true },
+  { href: "/settings/filas", icon: ListOrdered, label: "Filas", adminOnly: true },
   { href: "/settings/atendimento", icon: MessageCircle, label: "Atendimento" },
   { href: "/settings/tags", icon: Tag, label: "Tags" },
   { href: "/settings/atalhos", icon: Zap, label: "Atalhos" },
@@ -118,6 +121,8 @@ export default function Sidebar({
   function handleNavClick() {
     if (mobileOpen) onMobileClose?.();
   }
+
+  const visibleSettings = settingsItems.filter((i) => !i.adminOnly || user?.nivel === "admin");
 
   return (
     <>
@@ -265,7 +270,7 @@ export default function Sidebar({
 
             {settingsOpen && !effectiveCollapsed && (
               <div className="ml-6 mt-1 space-y-0.5">
-                {settingsItems.map((item) => (
+                {visibleSettings.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}

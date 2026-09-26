@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma.js";
+import { sendWhatsAppMessage } from "../channels/whatsapp/sender.js";
 import {
   mercadophoneFindOrCreateContact,
   mercadophoneOpenTicket,
@@ -23,6 +24,19 @@ function authHeader(token) {
 }
 
 export async function sendTextMessage({ to, text, canal = "whatsapp" }) {
+  // WhatsApp respeita WPP_PROVIDER (waha | mercadophone) via sender.js —
+  // igual ao adaptador usado pela BIA (core/outbound.js). Assim a resposta
+  // manual do atendente sai pela mesma sessão do contato.
+  if (canal === "whatsapp") {
+    const result = await sendWhatsAppMessage({ identifier: to, texto: text });
+    if (!result.success) {
+      console.error(`[outgoing] falha ao enviar para whatsapp/${to}:`, result.error);
+      return null;
+    }
+    console.log(`[outgoing] text ok → wid=${result.externalMessageId}`);
+    return result.externalMessageId;
+  }
+
   const { url, token } = await getOutgoingConfig();
   if (!url || !token) {
     console.warn("[outgoing] MERCADOPHONE_URL / MERCADOPHONE_TOKEN não configurados — abortando envio");

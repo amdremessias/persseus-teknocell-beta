@@ -1,5 +1,6 @@
 {
   "name": "handoff_v1",
+  "id": "22222222-2222-4222-8222-222222222222",
   "active": false,
   "tags": [{ "name": "BIA_V3" }, { "name": "phase2" }],
   "settings": { "executionOrder": "v1" },
@@ -34,6 +35,7 @@
     },
     {
       "id": "node-h010-0000-0000-000000000010",
+      "webhookId": "a1b2c3d4-1111-4e5f-8a9b-000000000011",
       "name": "webhook_handoff",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -46,8 +48,8 @@
         "options": {}
       },
       "credentials": {
-        "headerAuth": {
-          "id": "",
+        "httpHeaderAuth": {
+          "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
           "name": "BIA Secret - Webhook"
         }
       }
@@ -72,14 +74,14 @@
       "position": [360, 380],
       "parameters": {
         "method": "GET",
-        "url": "=https://crm.teknoscel.shop/api/leads/{{ ($input.item.json.body ?? $input.item.json).lead_id }}",
+        "url": "=http://backend:3001/api/leads/{{ ($input.item.json.body ?? $input.item.json).lead_id }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": { "timeout": 8000 }
       },
       "credentials": {
         "httpHeaderAuth": {
-          "id": "",
+          "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
           "name": "BIA Secret - CRM"
         }
       }
@@ -102,17 +104,18 @@
       "position": [880, 380],
       "parameters": {
         "method": "POST",
-        "url": "https://crm.teknoscel.shop/api/webhooks/handoff-notify",
+        "url": "http://backend:3001/api/webhooks/handoff-notify",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "contentType": "json",
-        "body": "={{ JSON.stringify({ lead_id: $json.lead_id, agente_id: $json.agente_id, handoff_reason: $json.handoff_reason, metadata: $json.metadata }) }}",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ lead_id: $json.lead_id, agente_id: $json.agente_id, handoff_reason: $json.handoff_reason, metadata: $json.metadata }) }}",
         "options": { "timeout": 8000 }
       },
       "credentials": {
         "httpHeaderAuth": {
-          "id": "",
+          "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
           "name": "BIA Secret - CRM"
         }
       }

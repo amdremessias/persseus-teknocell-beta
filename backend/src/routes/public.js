@@ -3,6 +3,7 @@ import prisma from "../lib/prisma.js";
 import { calcScore } from "../lib/scoring.js";
 import { assignToQueue } from "../services/queue.js";
 import { dispatchPush } from "../lib/push.js";
+import { closeOpenTickets } from "../services/tickets.js";
 
 const AUDIO_NEEDS_TRANSCODE_RE = /\.(opus|ogg|oga|webm)(\?|$)/i;
 
@@ -163,6 +164,7 @@ export default async function publicRoutes(fastify) {
     });
 
     await prisma.queueAssignment.deleteMany({ where: { leadId: req.params.id } });
+    await closeOpenTickets({ leadId: req.params.id, atendenteId: null });
 
     fastify.io?.emit("lead:updated", lead);
     return reply.code(200).send({ id: lead.id, status: "arquivado" });

@@ -1,5 +1,6 @@
 import prisma from "../lib/prisma.js";
 import { toE164BrazilMobile, phoneVariants, formatBrazilPhoneDisplay } from "../utils/phone.js";
+import { ensureOpenTicket } from "../services/tickets.js";
 
 // Contact.canal (string) → Lead Channel enum
 const CANAL_MAP = {
@@ -53,6 +54,9 @@ export default async function conversationRoutes(fastify) {
       },
     });
 
+    const { ticket, isNew } = await ensureOpenTicket({ leadId: lead.id, canal }).catch(() => ({ ticket: null, isNew: false }));
+    if (isNew) console.log(`[conversations] novo ticket #${ticket?.numero} lead=${lead.id} (from-contact)`);
+
     fastify.io?.emit("lead:new", { id: lead.id });
 
     return reply.code(201).send({ leadId: lead.id, isNew: true });
@@ -94,6 +98,9 @@ export default async function conversationRoutes(fastify) {
         tags: [],
       },
     });
+
+    const { ticket, isNew } = await ensureOpenTicket({ leadId: lead.id, canal: "whatsapp" }).catch(() => ({ ticket: null, isNew: false }));
+    if (isNew) console.log(`[conversations] novo ticket #${ticket?.numero} lead=${lead.id} (from-phone)`);
 
     fastify.io?.emit("lead:new", { id: lead.id });
 

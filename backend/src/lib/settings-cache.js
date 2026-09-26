@@ -83,6 +83,11 @@ export const INTEGRATION_KEYS = [
   "METAFB_TOKEN",
   // TikTok
   "TIKTOK_TOKEN",
+  // WAHA (WhatsApp HTTP API) — gateway WPP local (community)
+  "WPP_PROVIDER",
+  "WAHA_URL",
+  "WAHA_SESSION",
+  "WAHA_API_KEY",
   // Verify token compartilhado legado (Meta)
   "META_VERIFY_TOKEN",
   // Sync de mensagens do MercadoPhone — kill switch ("true"/"false", default true)
@@ -104,6 +109,7 @@ export const SECRET_KEYS = new Set([
   "META_VERIFY_TOKEN_INSTAGRAM",
   "META_VERIFY_TOKEN_MESSENGER",
   "META_VERIFY_TOKEN",
+  "WAHA_API_KEY",
 ]);
 
 // Indica se um valor existe (mesmo mascarado) — pra UI sinalizar "definido"

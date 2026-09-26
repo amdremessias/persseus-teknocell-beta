@@ -1,6 +1,17 @@
 import { getSetting } from '../../lib/settings-cache.js';
+import { sendWahaText, sendWahaMedia } from './waha-api.js';
 
 export async function sendWhatsAppMessage({ identifier, texto, mediaUrl }) {
+  // WPP_PROVIDER = "waha" | "mercadophone" (padrão). Toggle via Integrações/.env.
+  const provider = getSetting('WPP_PROVIDER', 'mercadophone');
+  if (provider === 'waha') {
+    if (mediaUrl) {
+      const r = await sendWahaMedia({ identifier, texto, mediaUrl });
+      return r;
+    }
+    return sendWahaText({ identifier, texto });
+  }
+
   const url = getSetting('MERCADOPHONE_URL', 'https://exclusivoapi.mercadophone.tech/api/messages/sendOfficialData');
   const token = getSetting('MERCADOPHONE_TOKEN');
   if (!token) {

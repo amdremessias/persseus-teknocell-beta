@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useChats, type ChatItem, type ChatTag } from "@/hooks/useChats";
+import { useChats, type ChatItem, type ChatQueue, type ChatTag } from "@/hooks/useChats";
 import { useChatStats } from "@/hooks/useChatStats";
 import { useSocket } from "@/hooks/useSocket";
 import { useAuth } from "@/store/auth";
@@ -61,9 +61,15 @@ export default function ConversationList({ selectedId, onSelect, assistenciaMode
   const [canal, setCanal] = useState("");
   const [atendenteIdSelect, setAtendenteIdSelect] = useState("");
   const [tagId, setTagId] = useState("");
+  const [filaId, setFilaId] = useState("");
+  const [filas, setFilas] = useState<ChatQueue[]>([]);
   const [meusFiltro, setMeusFiltro] = useState(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("chats:meusFiltro") === "1";
+  });
+  const [aba, setAba] = useState<"ativos" | "finalizados">(() => {
+    if (typeof window === "undefined") return "ativos";
+    return localStorage.getItem("chats:aba") === "finalizados" ? "finalizados" : "ativos";
   });
   const atendenteId = meusFiltro ? (user?.id ?? "") : atendenteIdSelect;
   const [atendentes, setAtendentes] = useState<Atendente[]>([]);
@@ -83,10 +89,11 @@ export default function ConversationList({ selectedId, onSelect, assistenciaMode
     if (canal) p.canal = canal;
     if (atendenteId) p.atendenteId = atendenteId;
     if (tagId) p.tagId = tagId;
+    if (filaId) p.queueId = filaId;
     return p;
-  }, [q, canal, atendenteId, tagId]);
+  }, [q, canal, atendenteId, tagId, filaId]);
 
-  const { items, total, loading, refetch } = useChats({ ...params, assistencia: assistenciaMode });
+  const { items, total, loading, refetch } = useChats({ ...params, assistencia: assistenciaMode, finalizadas: aba === "finalizados" });
   const meuId = user?.id;
   const { total: meuCount, refetch: refetchMeu } = useChats(
     meuId ? { atendenteId: meuId } : {},
@@ -110,12 +117,21 @@ export default function ConversationList({ selectedId, onSelect, assistenciaMode
       const list = Array.isArray(r.data) ? r.data : r.data?.tags || [];
       setTags(list);
     }).catch(() => setTags([]));
+    api.get("/queues/my").then((r) => {
+      const list = Array.isArray(r.data) ? r.data : r.data?.queues || [];
+      setFilas(list);
+    }).catch(() => setFilas([]));
   }, []);
 
   function toggleMeusFiltro() {
     const next = !meusFiltro;
     setMeusFiltro(next);
     localStorage.setItem("chats:meusFiltro", next ? "1" : "0");
+  }
+
+  function selectAba(next: "ativos" | "finalizados") {
+    setAba(next);
+    localStorage.setItem("chats:aba", next);
   }
 
   function handleSelectChat(id: string) {
@@ -192,7 +208,7 @@ export default function ConversationList({ selectedId, onSelect, assistenciaMode
   }
 
   return (
-    <aside className="flex flex-col h-full bg-white overflow-hidden">
+    <aside className="flex flex-col h-full min-h-0 bg-white overflow-hidden">
       <div className="px-4 py-3 border-b border-gray-100 shrink-0 space-y-2">
         <div className="flex items-center justify-between gap-2">
           {/* Hamburger — mobile only */}
@@ -222,7 +238,7 @@ export default function ConversationList({ selectedId, onSelect, assistenciaMode
               onClick={() => setFiltersOpen((v) => !v)}
               className={cn(
                 "md:hidden p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl transition",
-                (canal || atendenteIdSelect || tagId || meusFiltro)
+                (canal || atendenteIdSelect || tagId || filaId || meusFiltro)
                   ? "text-green-600 bg-green-50"
                   : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
               )}
@@ -244,6 +260,38 @@ export default function ConversationList({ selectedId, onSelect, assistenciaMode
         <div className="mb-3 grid grid-cols-2 gap-2">
           <SimuladorMaquininha currentUserNivel={user?.nivel} />
           <AvaliacaoIphone currentUserNivel={user?.nivel} />
+        </div>
+
+        {/* Aba Finalizados toggle */}
+        <div className="grid grid-cols-2 gap-1 p-1 bg-gray-100 rounded-xl">
+          <button
+            onClick={() => selectAba("ativos")}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-medium transition",
+              aba === "ativos"
+                ? "bg-white text-green-700 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            )}
+          >
+            Em atendimento
+          </button>
+          <button
+            onClick={() => selectAba("finalizados")}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1",
+              aba === "finalizados"
+                ? "bg-white text-green-700 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            )}
+          >
+            Finalizados
+            <span className={cn(
+              "px-1.5 py-0.5 rounded-full text-[10px] font-bold",
+              aba === "finalizados" ? "bg-green-100 text-green-700" : "bg-white text-gray-500"
+            )}>
+              {stats?.hoje.finalizadas ?? "—"}
+            </span>
+          </button>
         </div>
 
         <div className="relative">
@@ -281,7 +329,7 @@ export default function ConversationList({ selectedId, onSelect, assistenciaMode
         )}
 
         {/* Filters — always visible on desktop, toggle on mobile */}
-        <div className={cn("grid grid-cols-3 gap-1.5", !filtersOpen && "hidden md:grid")}>
+        <div className={cn("grid grid-cols-2 md:grid-cols-4 gap-1.5", !filtersOpen && "hidden md:grid")}>
           <select
             value={canal}
             onChange={(e) => setCanal(e.target.value)}
@@ -314,6 +362,16 @@ export default function ConversationList({ selectedId, onSelect, assistenciaMode
             <option value="">Tag</option>
             {tags.map((t) => (
               <option key={t.id} value={t.id}>{t.nome}</option>
+            ))}
+          </select>
+          <select
+            value={filaId}
+            onChange={(e) => setFilaId(e.target.value)}
+            className="border border-gray-200 rounded-lg px-1.5 py-2 md:py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-green-400"
+          >
+            <option value="">Fila</option>
+            {filas.map((f) => (
+              <option key={f.id} value={f.id}>{f.nome}</option>
             ))}
           </select>
         </div>
@@ -519,6 +577,19 @@ function ConversationCard({ item, selected, onSelect, onAssume, canAssume, isHan
               </span>
             )}
           </div>
+        )}
+
+        {item.fila && (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium w-fit"
+            style={{ backgroundColor: item.fila.cor ? `${item.fila.cor}1A` : "#E5E7EB", color: item.fila.cor || "#374151" }}>
+            {item.fila.nome}
+          </span>
+        )}
+
+        {item.ticketNumero != null && (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium w-fit bg-gray-100 text-gray-700">
+            🎫 #{String(item.ticketNumero).padStart(4, "0")}
+          </span>
         )}
 
         <div className="flex items-center justify-between mt-0.5">

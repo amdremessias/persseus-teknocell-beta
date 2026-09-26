@@ -13,6 +13,7 @@ import { clearHandoffPendente } from "../services/handoffWatch.js";
 import { getSuggestions } from "../services/suggestions.js";
 import { getSetting } from "../lib/settings-cache.js";
 import { finalizeConvertido } from "../services/leadStatus.js";
+import { closeOpenTickets } from "../services/tickets.js";
 
 const UPLOADS_DIR = process.env.UPLOADS_DIR || "/app/uploads";
 const UPLOADS_URL = process.env.UPLOADS_URL || "https://crm.teknoscel.shop/api/uploads";
@@ -62,9 +63,12 @@ function fireN8nBia({ telefone, leadId, userId, status }) {
     token_origin: getSetting("MERCADOPHONE_TOKEN", ""),
   };
   console.log(`[n8n:bia] enviando → ${n8nUrl}`, JSON.stringify(payload));
+  const headers = { "Content-Type": "application/json" };
+  const secret = getSetting("BIA_SECRET");
+  if (secret) headers["X-Bia-Secret"] = secret;
   fetch(n8nUrl, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(payload),
   })
     .then(async (res) => {
@@ -130,6 +134,7 @@ export default async function leadRoutes(fastify) {
         atendente: { select: { id: true, nome: true } },
         messages: { orderBy: { criadoEm: "asc" } },
         queueAssignments: { orderBy: { atribuidoEm: "desc" }, take: 5 },
+        tickets: { take: 1, orderBy: { abertoEm: "desc" } },
       },
     });
     if (!lead) return reply.code(404).send({ error: "Lead não encontrado" });
@@ -385,7 +390,7 @@ export default async function leadRoutes(fastify) {
     return lead;
   });
 
-  // Status update — handles "perdido" lifecycle specially
+  // Status update — handles "perdido"/"arquivado" lifecycle specially
   fastify.post("/api/leads/:id/status", auth, async (req, reply) => {
     const { status, motivo_perda } = req.body;
 
@@ -400,6 +405,20 @@ export default async function leadRoutes(fastify) {
       updateData.motivoPerda = motivo_perda || null;
       updateData.dataPerda = new Date();
       await prisma.queueAssignment.deleteMany({ where: { leadId: req.params.id } });
+    }
+
+    // Finalização de conversa (perdido/arquivado) também encerra o ticket em
+    // aberto (protocolo de atendimento).
+    if (status === "perdido" || status === "arquivado") {
+      const before = await prisma.lead.findUnique({
+        where: { id: req.params.id },
+        select: { atendenteId: true },
+      });
+      await closeOpenTickets({ leadId: req.params.id, atendenteId: before?.atendenteId ?? null });
+      clearHandoffPendente(req.params.id).catch(() => {});
+      if (status === "arquivado") {
+        await prisma.queueAssignment.deleteMany({ where: { leadId: req.params.id } });
+      }
     }
 
     const lead = await prisma.lead.update({ where: { id: req.params.id }, data: updateData });

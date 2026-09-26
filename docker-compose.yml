@@ -63,8 +63,14 @@ services:
       BIA_GROUPING_DELAY_MS: ${BIA_GROUPING_DELAY_MS:-8000}
       BIA_INTER_MESSAGE_DELAY_MS: ${BIA_INTER_MESSAGE_DELAY_MS:-2000}
       UPLOADS_DIR: /app/uploads
-      UPLOADS_URL: ${UPLOADS_URL:-https://crm.teknoscel.shop/api/uploads}
+      UPLOADS_URL: ${UPLOADS_URL:-https://crm.teknosCEL.shop/api/uploads}
       SITE_QUIZ_SECRET: ${SITE_QUIZ_SECRET:-}
+      # WAHA — WhatsApp HTTP API (gateway WPP; toggle WPP_PROVIDER: waha|mercadophone)
+      WPP_PROVIDER: ${WPP_PROVIDER:-mercadophone}
+      WAHA_URL: ${WAHA_URL:-http://waha:3000}
+      WAHA_SESSION: ${WAHA_SESSION:-default}
+      WAHA_API_KEY: ${WAHA_API_KEY:-}
+      INTERNAL_API_URL: ${INTERNAL_API_URL:-http://backend:3001}
     volumes:
       - uploads_data:/app/uploads
     ports:
@@ -80,8 +86,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://crm.teknoscel.shop/api}
-        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-wss://crm.teknoscel.shop}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://crm.teknosCEL.shop/api}
+        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-wss://crm.teknosCEL.shop}
         NEXT_PUBLIC_VAPID_KEY: ${VAPID_PUBLIC_KEY}
         NEXT_PUBLIC_BIA_VENDAS_URL: ${NEXT_PUBLIC_BIA_VENDAS_URL:-http://192.168.1.50:8080}
         NEXT_PUBLIC_BIA_VENDAS_REMOTO_URL: ${NEXT_PUBLIC_BIA_VENDAS_REMOTO_URL:-http://100.82.152.83:8080}
@@ -92,7 +98,54 @@ services:
     depends_on:
       - backend
 
+    # WAHA - WhatsApp HTTP API (comunidade/chrome). Dashboard na porta 3002 (path /dashboard)
+  waha:
+    image: devlikeapro/waha:chrome
+    container_name: teknos_waha
+    restart: unless-stopped
+    ports:
+      - "3002:3000"
+    environment:
+      WAHA_API_KEY: ${WAHA_API_KEY}
+      WAHA_DASHBOARD_USERNAME: ${WAHA_DASHBOARD_USERNAME:-admin}
+      WAHA_DASHBOARD_PASSWORD: ${WAHA_DASHBOARD_PASSWORD}
+      WHATSAPP_SWAGGER_USERNAME: ${WAHA_DASHBOARD_USERNAME:-admin}
+      WHATSAPP_SWAGGER_PASSWORD: ${WAHA_DASHBOARD_PASSWORD}
+      WAHA_PRINT_QR: "true"
+      WAHA_BASE_URL: http://waha:3000
+      WHATSAPP_API_PORT: "3000"
+      WHATSAPP_HOOK_URL: http://backend:3001/api/webhooks/waha
+      WHATSAPP_HOOK_EVENTS: message,session.status
+    volumes:
+      - waha_sessions:/app/.sessions
+    depends_on:
+      - backend
+
+  # n8n - automacao (workflows da BIA). UI na porta 5678
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: teknos_n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      N8N_HOST: 0.0.0.0
+      N8N_PORT: 5678
+      N8N_SECURE_COOKIE: "false"
+      N8N_PUBLIC_API_DISABLED: "false"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_HIRING_BANNER_ENABLED: "false"
+      N8N_COMMUNITY_PACKAGES_ENABLED: "true"
+      N8N_LOG_LEVEL: "debug"
+      NODE_FUNCTION_ALLOW_BUILTIN: "node:sqlite,node:fs,node:path,node:crypto,node:url,node:os,node:timers"
+      GENERIC_TIMEZONE: America/Sao_Paulo
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n-workflows:/home/node/workflows
+
 volumes:
   postgres_data:
   redis_data:
   uploads_data:
+  waha_sessions:
+  n8n_data:

@@ -84,6 +84,21 @@ const SECTIONS: SectionDef[] = [
     ],
   },
   {
+    id: "waha",
+    title: "WAHA (WhatsApp HTTP API)",
+    description: "Gateway WhatsApp self-hosted (comunidade). Escaneie o QR em http://<host>:3002/dashboard para conectar o número.",
+    icon: Smartphone,
+    fields: [
+      { key: "WPP_PROVIDER", label: "Provedor de envio WhatsApp", type: "select", options: [
+        { value: "waha", label: "WAHA (self-hosted)" },
+        { value: "mercadophone", label: "MercadoPhone (BaaS)" },
+      ], help: "Define qual gateway envia mensagens para o canal WhatsApp. Webhook WAHA: /api/webhooks/waha." },
+      { key: "WAHA_URL", label: "WAHA URL", type: "url", placeholder: "http://waha:3000", help: "Endereço interno (container) do WAHA." },
+      { key: "WAHA_SESSION", label: "Sessão", type: "text", placeholder: "default" },
+      { key: "WAHA_API_KEY", label: "API Key (X-Api-Key)", type: "password", help: "Gere em http://<host>:3002/dashboard (primeiro acesso: 1013af1459...) e cole aqui." },
+    ],
+  },
+  {
     id: "instagram",
     title: "Instagram (Meta)",
     description: "Direct Messages do Instagram. Requer página vinculada à conta Meta Business.",

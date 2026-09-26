@@ -1,22 +1,37 @@
 {
   "name": "bia_core_v1",
+  "id": "11111111-1111-4111-8111-111111111111",
   "active": false,
-  "tags": [{ "name": "BIA_V3" }, { "name": "bia_core" }],
-  "settings": { "executionOrder": "v1" },
+  "tags": [
+    {
+      "name": "BIA_V3"
+    },
+    {
+      "name": "bia_core"
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1"
+  },
   "versionId": "bia00001-core-0001-0000-000000000001",
-  "meta": { "templateCredsSetupCompleted": false },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
   "nodes": [
     {
       "id": "stick-0001-0000-0000-000000000001",
       "name": "📌 BIA Core V1",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [-440, -60],
+      "position": [
+        -440,
+        -60
+      ],
       "parameters": {
         "width": 500,
         "height": 220,
         "color": 4,
-        "content": "## BIA_V3 — bia_core_v1\n\n**Fluxo principal da BIA SDR.**\n\nWebhook → Normalizar → Identificar Origem → Preparar Prompt → Classificador (OpenAI) → Validar Resposta → Retorno CRM\n\n**Origens:** `whatsapp` | `lovable`\n**Endpoint:** `POST /webhook/bia-teknos`\n**Retorno:** `POST https://crm.teknoscel.shop/api/webhooks/bia-response`"
+        "content": "## BIA_V3 — bia_core_v1\n\nFluxo principal da BIA SDR (demo local).\n\nWebhook → Normalizar → Origem → Memória (SQLite) → Preparar Prompt → Classificador (Gemini) → Resposta → Salvar (SQLite + backend local)\n\n**Origens:** `whatsapp` | `lovable`\n**Endpoints:**\n- Entrada: `POST /webhook/bia-teknos`\n- Saída: `POST http://backend:3001/api/webhooks/bia-response`\n\n**Persistência:** memória em `/home/node/workflows/bia_memoria.db` + mensagem BIA gravada no CRM local (`messages`)."
       }
     },
     {
@@ -24,12 +39,15 @@
       "name": "🔑 Credenciais Necessárias",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [-440, 180],
+      "position": [
+        -440,
+        180
+      ],
       "parameters": {
         "width": 500,
         "height": 240,
         "color": 2,
-        "content": "## Credenciais para configurar antes de ativar\n\n1. **Webhook Auth** → `Header Auth`\n   - Header: `X-Bia-Secret`\n   - Valor: copiar de `BIA_SECRET` no `.env` do backend\n\n2. **OpenAI** → `openAiApi`\n   - Nome sugerido: `OpenAI - TeknosCel`\n   - Modelo: `gpt-4o-mini`\n\n3. **CRM Auth** → `HTTP Header Auth`\n   - Nome sugerido: `BIA Secret - CRM`\n   - Header: `X-Bia-Secret` (mesmo valor do item 1)"
+        "content": "## Credenciais configuradas\n\n1. **Webhook Auth** → `Header Auth`\n   - Header: `X-Bia-Secret`\n   - Valor: `BIA_SECRET` do `.env` do backend\n\n2. **Google Gemini** → `googlePalmApi`\n   - Credencial: `Google Gemini API Key`\n   - Modelo: `gemini-3.1-flash-lite`\n\n3. **Memória (demo)** → SQLite local `bia_memoria.db`\n   - Sem credencial\n   - MercadoPhone desativado por enquanto (implementar depois)"
       }
     },
     {
@@ -37,7 +55,10 @@
       "name": "⛔ Regras Imutáveis",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [-440, 440],
+      "position": [
+        -440,
+        440
+      ],
       "parameters": {
         "width": 500,
         "height": 280,
@@ -47,10 +68,14 @@
     },
     {
       "id": "node-0010-0000-0000-000000000010",
+      "webhookId": "a1b2c3d4-2222-4e5f-8a9b-000000000022",
       "name": "webhook_entrada",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [100, 380],
+      "position": [
+        100,
+        380
+      ],
       "parameters": {
         "httpMethod": "POST",
         "path": "bia-teknos",
@@ -59,8 +84,8 @@
         "options": {}
       },
       "credentials": {
-        "headerAuth": {
-          "id": "",
+        "httpHeaderAuth": {
+          "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
           "name": "BIA Secret - Webhook"
         }
       }
@@ -70,7 +95,10 @@
       "name": "responder_200",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [100, 580],
+      "position": [
+        100,
+        580
+      ],
       "parameters": {
         "respondWith": "json",
         "responseBody": "={ \"ok\": true }",
@@ -84,7 +112,10 @@
       "name": "normalizar_entrada",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [360, 380],
+      "position": [
+        360,
+        380
+      ],
       "parameters": {
         "jsCode": "const raw = $input.item.json.body ?? $input.item.json;\n\nconst origemMap = {\n  whatsapp: 'whatsapp',\n  lovable: 'lovable',\n  instagram: 'instagram_futuro',\n  loja: 'atendimento_loja'\n};\nconst origem_lead = origemMap[raw.canal] ?? 'whatsapp';\n\nconst history = (raw.contexto ?? [])\n  .filter(m => m.tipo !== 'interno')\n  .slice(-10)\n  .map(m => ({\n    role: m.tipo === 'cliente' ? 'cliente' : m.tipo === 'bia' ? 'bia' : 'atendente',\n    text: m.texto,\n    at: m.criadoEm\n  }));\n\nconst is_first_contact = history.filter(m => m.role === 'cliente').length <= 1;\n\nlet pre_qualified = { uso_principal: null, orcamento: null, estado: null, prioridade: null };\nif (origem_lead === 'lovable') {\n  try {\n    const pq = JSON.parse(raw.mensagemCliente);\n    pre_qualified = {\n      uso_principal: pq.uso_principal ?? null,\n      orcamento: pq.orcamento ?? null,\n      estado: pq.estado ?? null,\n      prioridade: pq.prioridade ?? null\n    };\n  } catch (_) {}\n}\n\nreturn {\n  json: {\n    lead_id: raw.leadId,\n    lead_nome: raw.leadNome ?? null,\n    origem_lead,\n    current_message: raw.mensagemCliente,\n    resumo: raw.resumo ?? null,\n    is_first_contact,\n    history,\n    pre_qualified\n  }\n};"
       }
@@ -94,14 +125,21 @@
       "name": "identificar_origem",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3,
-      "position": [620, 380],
+      "position": [
+        620,
+        380
+      ],
       "parameters": {
         "mode": "rules",
         "rules": {
           "values": [
             {
               "conditions": {
-                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
                 "conditions": [
                   {
                     "id": "cond-lovable",
@@ -132,34 +170,34 @@
       "name": "preparar_prompt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [880, 380],
+      "position": [
+        880,
+        380
+      ],
       "parameters": {
-        "jsCode": "const j = $input.item.json;\n\nconst hist = (j.history ?? [])\n  .map(m => `[${m.role}]: ${m.text}`)\n  .join('\\n') || '(sem histórico)';\n\nconst pqLines = j.origem_lead === 'lovable'\n  ? `Uso principal: ${j.pre_qualified.uso_principal ?? '-'}\\nOrçamento: ${j.pre_qualified.orcamento ?? '-'}\\nEstado: ${j.pre_qualified.estado ?? '-'}\\nPrioridade: ${j.pre_qualified.prioridade ?? '-'}`\n  : 'N/A (lead whatsapp — coletar durante conversa)';\n\nconst prompt = [\n  `ORIGEM: ${j.origem_lead}`,\n  `LEAD: ${j.lead_nome ?? 'não identificado'}`,\n  `PRIMEIRO CONTATO: ${j.is_first_contact ? 'sim' : 'não'}`,\n  `RESUMO ANTERIOR: ${j.resumo ?? 'nenhum'}`,\n  '',\n  'HISTÓRICO (últimas 10 msgs):',\n  hist,\n  '',\n  'PRÉ-QUALIFICAÇÃO:',\n  pqLines,\n  '',\n  'MENSAGEM ATUAL DO CLIENTE:',\n  j.current_message\n].join('\\n');\n\nreturn {\n  json: {\n    ...j,\n    prompt\n  }\n};"
+        "jsCode": "const j = $input.item.json;\n\nconst SYSTEM = `Você é BIA, assistente de pré-vendas da TeknosCel — concessionária especializada em iPhones.\n\nMISSÃO:\nResponder rápido, gerar valor, qualificar o lead e encaminhar ao vendedor humano no momento certo. Você não fecha vendas. Você aquece e prepara o terreno.\n\nTOM: profissional, direto, acolhedor. Português brasileiro natural. Nunca robótico.\n\nSOBRE SEMINOVOS TEKNOSCEL:\n- Aparelhos revisados, garantia de 6 meses da loja, acompanham kit de proteção\n- NÃO informe: saúde da bateria, quantidade em estoque, disponibilidade específica\n\nSOBRE LACRADOS TEKNOSCEL:\n- Nota fiscal, 1 ano de garantia Apple, +6 meses adicional da loja\n\nREGRAS IMUTÁVEIS — NUNCA VIOLE:\n1. Nunca afirme disponibilidade ou estoque\n2. Nunca invente desconto, promoção ou condição especial\n3. Nunca confirme reserva\n4. Nunca informe saúde de bateria\n5. Nunca informe quantidade exata\n6. Nunca discuta com o cliente\n7. Assistência técnica: máx 2 perguntas + 1 orientação + encaminhar humano\n\nSe perguntarem sobre estoque/bateria/disponibilidade: diga que o time de vendas tem essa informação em tempo real e ofereça conexão imediata.\n\nLEADS PRÉ-QUALIFICADOS (origem = lovable):\nO cliente já informou uso, orçamento, estado e prioridade. NÃO repita essas perguntas. Vá direto ao valor: \"Com base no que você nos informou, [insight personalizado].\"\n\nFORMATO DE SAÍDA OBRIGATÓRIO — responda APENAS com JSON válido, sem texto fora do JSON:\n{\n  \"intencao\": \"produto | preco | seminovo | assistencia | troca | outro\",\n  \"complexidade\": \"simples | media | complexa\",\n  \"lead_score\": 0,\n  \"urgencia\": \"baixa | media | alta\",\n  \"humano\": false,\n  \"estado_atendimento\": \"novo | qualificando | interessado | negociando | aguardando | handoff_humano | fechado | perdido\",\n  \"resumo\": \"1 linha com o que o cliente quer e onde está na jornada\",\n  \"response_text\": \"mensagem da BIA para o cliente — texto puro, sem markdown\"\n}\n\nlead_score: 8-10 = intenção clara de compra | 5-7 = interesse real | 0-4 = curiosidade.\nhumano=true quando: lead_score >= 8 OU cliente pediu humano OU situação fora do escopo da BIA.`;\n\nconst hist = (j.history ?? [])\n  .map(m => `[${m.role}]: ${m.text}`)\n  .join('\\n') || '(sem histórico)';\n\nconst pqLines = j.origem_lead === 'lovable'\n  ? `Uso principal: ${j.pre_qualified.uso_principal ?? '-'}\\nOrçamento: ${j.pre_qualified.orcamento ?? '-'}\\nEstado: ${j.pre_qualified.estado ?? '-'}\\nPrioridade: ${j.pre_qualified.prioridade ?? '-'}`\n  : 'N/A (lead whatsapp — coletar durante conversa)';\n\nconst mem = j.memoria ?? {};\nconst memLinhas = [];\nif (mem.resumo) memLinhas.push('Resumo do atendimento: ' + mem.resumo);\nif (mem.estado_atendimento) memLinhas.push('Estado: ' + mem.estado_atendimento);\nif (mem.intencao) memLinhas.push('Intenção: ' + mem.intencao);\nif (mem.lead_score != null) memLinhas.push('Score: ' + mem.lead_score);\nif (mem.ultima_mensagem) memLinhas.push('Última resposta da BIA: ' + mem.ultima_mensagem);\nconst atendAnterior = (mem.atendimentos ?? [])\n  .filter(m => m.papel === 'cliente' || m.papel === 'bia')\n  .slice(-10)\n  .map(m => '[' + m.papel + ']: ' + m.texto)\n  .join('\\n');\nif (atendAnterior) { memLinhas.push('Atendimentos anteriores:'); memLinhas.push(atendAnterior); }\nconst memoriaBlock = memLinhas.length ? memLinhas.join('\\n') : '(sem memória registrada)';\n\nconst prompt = [\n  SYSTEM,\n  '----------------------------------------',\n  `ORIGEM: ${j.origem_lead}`,\n  `LEAD: ${j.lead_nome ?? 'não identificado'}`,\n  `PRIMEIRO CONTATO: ${j.is_first_contact ? 'sim' : 'não'}`,\n  `RESUMO ANTERIOR: ${j.resumo ?? 'nenhum'}`,\n  '',\n  'HISTÓRICO (últimas 10 msgs):',\n  hist,\n  '',\n  'CONTEXTO REGISTRADO (memória):',\n  memoriaBlock,\n  '',\n  'PRÉ-QUALIFICAÇÃO:',\n  pqLines,\n  '',\n  'MENSAGEM ATUAL DO CLIENTE:',\n  j.current_message\n].join('\\n');\n\nreturn {\n  json: {\n    ...j,\n    prompt\n  }\n};"
       }
     },
     {
       "id": "node-0050-0000-0000-000000000050",
-      "name": "openai_model",
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "name": "gemini_model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1.1,
-      "position": [1100, 560],
+      "position": [
+        1100,
+        560
+      ],
       "parameters": {
-        "model": {
-          "__rl": true,
-          "value": "gpt-4o-mini",
-          "mode": "list",
-          "cachedResultName": "gpt-4o-mini"
-        },
+        "modelName": "models/gemini-3.1-flash-lite",
         "options": {
           "temperature": 0.2,
-          "maxTokens": 1024,
-          "systemMessage": "Você é BIA, assistente de pré-vendas da TeknosCel — concessionária especializada em iPhones.\n\nMISSÃO:\nResponder rápido, gerar valor, qualificar o lead e encaminhar ao vendedor humano no momento certo. Você não fecha vendas. Você aquece e prepara o terreno.\n\nTOM: profissional, direto, acolhedor. Português brasileiro natural. Nunca robótico.\n\nSOBRE SEMINOVOS TEKNOSCEL:\n- Aparelhos revisados, garantia de 6 meses da loja, acompanham kit de proteção\n- NÃO informe: saúde da bateria, quantidade em estoque, disponibilidade específica\n\nSOBRE LACRADOS TEKNOSCEL:\n- Nota fiscal, 1 ano de garantia Apple, +6 meses adicional da loja\n\nREGRAS IMUTÁVEIS — NUNCA VIOLE:\n1. Nunca afirme disponibilidade ou estoque\n2. Nunca invente desconto, promoção ou condição especial\n3. Nunca confirme reserva\n4. Nunca informe saúde de bateria\n5. Nunca informe quantidade exata\n6. Nunca discuta com o cliente\n7. Assistência técnica: máx 2 perguntas + 1 orientação + encaminhar humano\n\nSe perguntarem sobre estoque/bateria/disponibilidade: diga que o time de vendas tem essa informação em tempo real e ofereça conexão imediata.\n\nLEADS PRÉ-QUALIFICADOS (origem = lovable):\nO cliente já informou uso, orçamento, estado e prioridade. NÃO repita essas perguntas. Vá direto ao valor: \"Com base no que você nos informou, [insight personalizado].\"\n\nFORMATO DE SAÍDA OBRIGATÓRIO — responda APENAS com JSON válido, sem texto fora do JSON:\n{\n  \"intencao\": \"produto | preco | seminovo | assistencia | troca | outro\",\n  \"complexidade\": \"simples | media | complexa\",\n  \"lead_score\": 0,\n  \"urgencia\": \"baixa | media | alta\",\n  \"humano\": false,\n  \"estado_atendimento\": \"novo | qualificando | interessado | negociando | aguardando | handoff_humano | fechado | perdido\",\n  \"resumo\": \"1 linha com o que o cliente quer e onde está na jornada\",\n  \"response_text\": \"mensagem da BIA para o cliente — texto puro, sem markdown\"\n}\n\nlead_score: 8-10 = intenção clara de compra | 5-7 = interesse real | 0-4 = curiosidade.\nhumano=true quando: lead_score >= 8 OU cliente pediu humano OU situação fora do escopo da BIA."
+          "maxOutputTokens": 1024
         }
       },
       "credentials": {
-        "openAiApi": {
-          "id": "",
-          "name": "OpenAI - TeknosCel"
+        "googlePalmApi": {
+          "id": "RbqKGzjBku5XvZfN",
+          "name": "Google Gemini API Key"
         }
       }
     },
@@ -168,7 +206,10 @@
       "name": "structured_parser",
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.2,
-      "position": [1340, 560],
+      "position": [
+        1340,
+        560
+      ],
       "parameters": {
         "schemaType": "fromJson",
         "inputSchema": "",
@@ -180,7 +221,10 @@
       "name": "classificador_bia",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.4,
-      "position": [1140, 380],
+      "position": [
+        1140,
+        380
+      ],
       "parameters": {
         "promptType": "define",
         "text": "={{ $json.prompt }}"
@@ -191,39 +235,25 @@
       "name": "resposta_bia",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1400, 380],
+      "position": [
+        1400,
+        380
+      ],
       "parameters": {
         "jsCode": "const raw = $input.item.json;\nconst classificacao = raw.output ?? raw;\nconst normalizado = $('normalizar_entrada').item.json;\n\nconst blacklist = [\n  'em estoque', 'disponível', 'temos disponível', 'tenho aqui',\n  'saúde da bateria', 'bateria está', 'capacidade da bateria',\n  'desconto', 'promoção especial', 'condição especial',\n  'reservado', 'posso reservar', 'vou reservar',\n  'garanto', 'confirmo disponibilidade'\n];\n\nlet response_text = classificacao.response_text ?? 'Nosso time de vendas pode te ajudar! Posso conectar você agora?';\nlet humano = classificacao.humano ?? false;\nlet handoff_reason = null;\n\nconst lower = response_text.toLowerCase();\nif (blacklist.some(kw => lower.includes(kw))) {\n  response_text = 'Nosso time de vendas tem todas as informações atualizadas. Posso te conectar com eles agora?';\n  humano = true;\n  handoff_reason = 'violation_blacklist';\n}\n\nreturn {\n  json: {\n    crm_payload: {\n      lead_id: normalizado.lead_id,\n      respostas: [{ texto: response_text, mediaUrl: null }],\n      metadata: {\n        intencao: classificacao.intencao ?? 'outro',\n        complexidade: classificacao.complexidade ?? 'simples',\n        lead_score: classificacao.lead_score ?? 0,\n        urgencia: classificacao.urgencia ?? 'baixa',\n        estado_atendimento: classificacao.estado_atendimento ?? 'qualificando',\n        origem_lead: normalizado.origem_lead,\n        resumo: classificacao.resumo ?? null,\n        humano,\n        handoff_reason\n      }\n    }\n  }\n};"
       }
     },
     {
       "id": "node-0070-0000-0000-000000000070",
-      "name": "retorno_crm",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1660, 380],
+      "name": "salvar_memoria",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1660,
+        380
+      ],
       "parameters": {
-        "method": "POST",
-        "url": "https://crm.teknoscel.shop/api/webhooks/bia-response",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "contentType": "json",
-        "body": "={{ JSON.stringify($json.crm_payload) }}",
-        "options": {
-          "timeout": 10000,
-          "response": {
-            "response": {
-              "fullResponse": false
-            }
-          }
-        }
-      },
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "",
-          "name": "BIA Secret - CRM"
-        }
+        "jsCode": "const { DatabaseSync } = require('node:sqlite');\nconst payload = $input.item.json.crm_payload;\nconst normal = $('buscar_memoria').item.json;\n\nconst DB_PATH = '/home/node/workflows/bia_memoria.db';\n\nfunction init(db) {\n  db.exec(\"CREATE TABLE IF NOT EXISTS atendimentos (id INTEGER PRIMARY KEY AUTOINCREMENT, lead_id TEXT NOT NULL, papel TEXT NOT NULL, texto TEXT, media_url TEXT, criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))\");\n  db.exec(\"CREATE TABLE IF NOT EXISTS memorias (lead_id TEXT PRIMARY KEY, resumo TEXT, intencao TEXT, lead_score INTEGER, estado_atendimento TEXT, ultima_mensagem TEXT, atualizado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))\");\n  db.exec('CREATE INDEX IF NOT EXISTS idx_atendimentos_lead ON atendimentos(lead_id)');\n}\n\nconst db = new DatabaseSync(DB_PATH);\ninit(db);\n\nconst leadId = payload.lead_id;\nconst respText = (payload.respostas && payload.respostas[0] && payload.respostas[0].texto) || null;\n\nconst ins = db.prepare('INSERT INTO atendimentos (lead_id, papel, texto) VALUES (?, ?, ?)');\nif (normal.current_message) ins.run(leadId, 'cliente', normal.current_message);\nif (respText) ins.run(leadId, 'bia', respText);\n\nconst m = payload.metadata || {};\nconst ups = db.prepare(\"INSERT INTO memorias (lead_id, resumo, intencao, lead_score, estado_atendimento, ultima_mensagem) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(lead_id) DO UPDATE SET resumo=excluded.resumo, intencao=excluded.intencao, lead_score=excluded.lead_score, estado_atendimento=excluded.estado_atendimento, ultima_mensagem=excluded.ultima_mensagem, atualizado_em=strftime('%Y-%m-%dT%H:%M:%fZ','now')\");\nups.run(leadId, m.resumo || null, m.intencao || null, m.lead_score || 0, m.estado_atendimento || null, respText);\n\nconst total = db.prepare('SELECT COUNT(*) AS c FROM atendimentos WHERE lead_id = ?').get(leadId).c;\ndb.close();\n\nreturn { json: { crm_payload: payload, _memoria: { ok: true, lead_id: leadId, atendimentos_gravados: total, resposta_gravada: !!respText } } };"
       }
     },
     {
@@ -231,7 +261,10 @@
       "name": "🔀 Origens — Phase 2",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [620, 560],
+      "position": [
+        620,
+        560
+      ],
       "parameters": {
         "width": 240,
         "height": 160,
@@ -244,12 +277,57 @@
       "name": "🤝 Handoff — Phase 2",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [1660, 580],
+      "position": [
+        1660,
+        580
+      ],
       "parameters": {
         "width": 280,
         "height": 180,
         "color": 2,
         "content": "## Handoff Phase 2\n\nQuando `humano=true`, chamar `handoff_v1`:\n\n```\nPOST /webhook/bia-handoff\n{ lead_id, metadata }\n```\n\nAdicionar nó IF após `resposta_bia` para bifurcar:\n- `humano=true` → `handoff_v1`\n- `humano=false` → fim"
+      }
+    },
+    {
+      "id": "node-0035-0000-0000-000000000035",
+      "name": "buscar_memoria",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        760,
+        60
+      ],
+      "parameters": {
+        "jsCode": "const { DatabaseSync } = require('node:sqlite');\nconst j = $input.item.json;\n\nconst DB_PATH = '/home/node/workflows/bia_memoria.db';\n\nfunction init(db) {\n  db.exec(\"CREATE TABLE IF NOT EXISTS atendimentos (id INTEGER PRIMARY KEY AUTOINCREMENT, lead_id TEXT NOT NULL, papel TEXT NOT NULL, texto TEXT, media_url TEXT, criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))\");\n  db.exec(\"CREATE TABLE IF NOT EXISTS memorias (lead_id TEXT PRIMARY KEY, resumo TEXT, intencao TEXT, lead_score INTEGER, estado_atendimento TEXT, ultima_mensagem TEXT, atualizado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))\");\n  db.exec('CREATE INDEX IF NOT EXISTS idx_atendimentos_lead ON atendimentos(lead_id)');\n}\n\nconst db = new DatabaseSync(DB_PATH);\ninit(db);\nconst atendimentos = db.prepare('SELECT papel, texto, criado_em FROM atendimentos WHERE lead_id = ? ORDER BY id ASC').all(j.lead_id);\nconst memo = db.prepare('SELECT resumo, intencao, lead_score, estado_atendimento, ultima_mensagem, atualizado_em FROM memorias WHERE lead_id = ?').get(j.lead_id);\ndb.close();\n\nreturn {\n  json: {\n    ...j,\n    memoria: {\n      resumo: memo ? memo.resumo : null,\n      intencao: memo ? memo.intencao : null,\n      lead_score: memo ? memo.lead_score : null,\n      estado_atendimento: memo ? memo.estado_atendimento : null,\n      ultima_mensagem: memo ? memo.ultima_mensagem : null,\n      atualizado_em: memo ? memo.atualizado_em : null,\n      atendimentos\n    }\n  }\n};"
+      }
+    },
+    {
+      "id": "node-m104-0000-0000-000000000104",
+      "name": "retorno_crm",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1910,
+        380
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=http://backend:3001/api/webhooks/bia-response",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.crm_payload) }}",
+        "options": {
+          "timeout": 8000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          "name": "BIA Secret - CRM"
+        }
       }
     }
   ],
@@ -257,45 +335,134 @@
     "webhook_entrada": {
       "main": [
         [
-          { "node": "responder_200", "type": "main", "index": 0 },
-          { "node": "normalizar_entrada", "type": "main", "index": 0 }
+          {
+            "node": "responder_200",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "normalizar_entrada",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
     "normalizar_entrada": {
       "main": [
-        [{ "node": "identificar_origem", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "identificar_origem",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "identificar_origem": {
       "main": [
-        [{ "node": "preparar_prompt", "type": "main", "index": 0 }],
-        [{ "node": "preparar_prompt", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "buscar_memoria",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "buscar_memoria",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "preparar_prompt": {
       "main": [
-        [{ "node": "classificador_bia", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "classificador_bia",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "openai_model": {
+    "gemini_model": {
       "ai_languageModel": [
-        [{ "node": "classificador_bia", "type": "ai_languageModel", "index": 0 }]
+        [
+          {
+            "node": "classificador_bia",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
       ]
     },
     "structured_parser": {
       "ai_outputParser": [
-        [{ "node": "classificador_bia", "type": "ai_outputParser", "index": 0 }]
+        [
+          {
+            "node": "classificador_bia",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
       ]
     },
     "classificador_bia": {
       "main": [
-        [{ "node": "resposta_bia", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "resposta_bia",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "resposta_bia": {
       "main": [
-        [{ "node": "retorno_crm", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "salvar_memoria",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "buscar_memoria": {
+      "main": [
+        [
+          {
+            "node": "preparar_prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "salvar_memoria": {
+      "main": [
+        [
+          {
+            "node": "retorno_crm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "retorno_crm": {
+      "main": [
+        [
+          {
+            "node": "responder_200",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
