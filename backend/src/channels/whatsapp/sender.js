@@ -1,9 +1,11 @@
 import { getSetting } from '../../lib/settings-cache.js';
 import { sendWahaText, sendWahaMedia } from './waha-api.js';
+import { sendMetaCloudMessage } from './meta-cloud-api.js';
 
 export async function sendWhatsAppMessage({ identifier, texto, mediaUrl }) {
-  // WPP_PROVIDER = "waha" | "mercadophone" (padrão). Toggle via Integrações/.env.
+  // WPP_PROVIDER escolhe o transporte ativo por instância.
   const provider = getSetting('WPP_PROVIDER', 'mercadophone');
+  if (provider === 'meta') return sendMetaCloudMessage({ identifier, texto, mediaUrl });
   if (provider === 'waha') {
     if (mediaUrl) {
       const r = await sendWahaMedia({ identifier, texto, mediaUrl });

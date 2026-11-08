@@ -52,12 +52,24 @@ services:
       OUTGOING_WEBHOOK_URL: ${OUTGOING_WEBHOOK_URL}
       OUTGOING_WEBHOOK_SECRET: ${OUTGOING_WEBHOOK_SECRET}
       META_VERIFY_TOKEN: ${META_VERIFY_TOKEN}
+      META_WA_PHONE_NUMBER_ID: ${META_WA_PHONE_NUMBER_ID:-}
+      META_WA_ACCESS_TOKEN: ${META_WA_ACCESS_TOKEN:-}
+      META_WA_VERIFY_TOKEN: ${META_WA_VERIFY_TOKEN:-}
+      META_WA_APP_SECRET: ${META_WA_APP_SECRET:-${META_APP_SECRET:-}}
+      META_WA_GRAPH_VERSION: ${META_WA_GRAPH_VERSION:-v20.0}
+      META_APP_SECRET: ${META_APP_SECRET:-}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
       FRONTEND_URL: ${FRONTEND_URL:-https://crm.teknoscel.shop}
       MERCADOPHONE_URL: ${MERCADOPHONE_URL:-https://exclusivoapi.mercadophone.tech/api/messages/sendOfficialData}
       MERCADOPHONE_TOKEN: ${MERCADOPHONE_TOKEN}
       BIA_MODE: ${BIA_MODE:-observer}
+      BIA_PROVIDER: ${BIA_PROVIDER:-webhook}
+      BIA_LLM_BASE_URL: ${BIA_LLM_BASE_URL:-}
+      BIA_LLM_MODEL: ${BIA_LLM_MODEL:-default}
+      BIA_LLM_API_KEY: ${BIA_LLM_API_KEY:-}
+      BIA_LLM_TIMEOUT_MS: ${BIA_LLM_TIMEOUT_MS:-30000}
+      BIA_LLM_SYSTEM_PROMPT: ${BIA_LLM_SYSTEM_PROMPT:-}
       BIA_WEBHOOK_URL: ${BIA_WEBHOOK_URL:-}
       BIA_SECRET: ${BIA_SECRET:-}
       BIA_GROUPING_DELAY_MS: ${BIA_GROUPING_DELAY_MS:-8000}
@@ -70,6 +82,7 @@ services:
       WAHA_URL: ${WAHA_URL:-http://waha:3000}
       WAHA_SESSION: ${WAHA_SESSION:-default}
       WAHA_API_KEY: ${WAHA_API_KEY:-}
+      WAHA_WEBHOOK_HMAC_KEY: ${WAHA_WEBHOOK_HMAC_KEY:-${WAHA_API_KEY:-}}
       INTERNAL_API_URL: ${INTERNAL_API_URL:-http://backend:3001}
     volumes:
       - uploads_data:/app/uploads
@@ -116,6 +129,7 @@ services:
       WHATSAPP_API_PORT: "3000"
       WHATSAPP_HOOK_URL: http://backend:3001/api/webhooks/waha
       WHATSAPP_HOOK_EVENTS: message,session.status
+      WHATSAPP_HOOK_HMAC_KEY: ${WAHA_WEBHOOK_HMAC_KEY:-${WAHA_API_KEY:-}}
     volumes:
       - waha_sessions:/app/.sessions
     depends_on:
