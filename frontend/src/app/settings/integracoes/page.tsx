@@ -34,10 +34,18 @@ interface SectionDef {
 const SECTIONS: SectionDef[] = [
   {
     id: "bia",
-    title: "Bia (n8n)",
-    description: "Controla o despacho automático de mensagens para o workflow Bia v3 no n8n.",
+    title: "Bia (n8n / gateway LLM)",
+    description: "Escolha entre o workflow atual e um endpoint OpenAI-compatible (servidor privado na VPN ou provedor externo). A chave nunca é mostrada após salvar.",
     icon: Bot,
     fields: [
+      { key: "BIA_PROVIDER", label: "Provedor da IA", type: "select", options: [
+        { value: "webhook", label: "n8n / webhook atual" },
+        { value: "openai-compatible", label: "LLM OpenAI-compatible (VPN/terceiro)" },
+      ], help: "O gateway recebe o histórico recente desta instância. Nenhum fallback externo é feito se o gateway falhar." },
+      { key: "BIA_LLM_BASE_URL", label: "URL base do gateway LLM", type: "url", placeholder: "http://10.x.x.x:8000/v1" },
+      { key: "BIA_LLM_MODEL", label: "Modelo/alias servido pelo gateway", type: "text", placeholder: "modelo-cliente" },
+      { key: "BIA_LLM_API_KEY", label: "Chave do gateway (se exigida)", type: "password" },
+      { key: "BIA_LLM_TIMEOUT_MS", label: "Timeout do gateway (ms)", type: "number", placeholder: "30000" },
       { key: "BIA_MODE", label: "Modo da Bia", type: "select", options: [
         { value: "observer", label: "Observer (apenas observa)" },
         { value: "active", label: "Active (dispara automaticamente)" },
@@ -85,17 +93,32 @@ const SECTIONS: SectionDef[] = [
   },
   {
     id: "waha",
-    title: "WAHA (WhatsApp HTTP API)",
-    description: "Gateway WhatsApp self-hosted (comunidade). Escaneie o QR em http://<host>:3002/dashboard para conectar o número.",
+    title: "WhatsApp: WAHA / Meta Cloud",
+    description: "Selecione o transporte de saída desta instância. Configure e valide as credenciais do provedor antes de ativá-lo.",
     icon: Smartphone,
     fields: [
       { key: "WPP_PROVIDER", label: "Provedor de envio WhatsApp", type: "select", options: [
         { value: "waha", label: "WAHA (self-hosted)" },
         { value: "mercadophone", label: "MercadoPhone (BaaS)" },
-      ], help: "Define qual gateway envia mensagens para o canal WhatsApp. Webhook WAHA: /api/webhooks/waha." },
+        { value: "meta", label: "WhatsApp Business Cloud API (Meta)" },
+      ], help: "Define o provedor usado para novas mensagens enviadas pelo CRM. Webhooks Meta: /api/webhooks/whatsapp/meta; WAHA: /api/webhooks/waha." },
       { key: "WAHA_URL", label: "WAHA URL", type: "url", placeholder: "http://waha:3000", help: "Endereço interno (container) do WAHA." },
       { key: "WAHA_SESSION", label: "Sessão", type: "text", placeholder: "default" },
-      { key: "WAHA_API_KEY", label: "API Key (X-Api-Key)", type: "password", help: "Gere em http://<host>:3002/dashboard (primeiro acesso: 1013af1459...) e cole aqui." },
+      { key: "WAHA_API_KEY", label: "API Key (X-Api-Key)", type: "password", help: "Credencial do servidor WAHA." },
+      { key: "WAHA_WEBHOOK_HMAC_KEY", label: "Webhook HMAC key (SHA-512)", type: "password", help: "Configure a mesma chave no webhook do WAHA; também pode usar WHATSAPP_HOOK_HMAC_KEY." },
+    ],
+  },
+  {
+    id: "meta-whatsapp",
+    title: "WhatsApp Business Cloud API (Meta)",
+    description: "Envio direto pelo Graph API e recebimento no endpoint com validação X-Hub-Signature-256.",
+    icon: MessageCircle,
+    fields: [
+      { key: "META_WA_PHONE_NUMBER_ID", label: "Phone Number ID", type: "text" },
+      { key: "META_WA_ACCESS_TOKEN", label: "Access Token", type: "password" },
+      { key: "META_WA_VERIFY_TOKEN", label: "Verify token do webhook", type: "password" },
+      { key: "META_WA_APP_SECRET", label: "App Secret (assinatura do webhook)", type: "password" },
+      { key: "META_WA_GRAPH_VERSION", label: "Graph API version", type: "text", placeholder: "v20.0" },
     ],
   },
   {

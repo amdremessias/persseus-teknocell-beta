@@ -50,6 +50,11 @@ export function isLoaded() {
 export const INTEGRATION_KEYS = [
   // Bia / n8n
   "BIA_MODE",
+  "BIA_PROVIDER",
+  "BIA_LLM_BASE_URL",
+  "BIA_LLM_MODEL",
+  "BIA_LLM_API_KEY",
+  "BIA_LLM_TIMEOUT_MS",
   "BIA_WEBHOOK_URL",
   "BIA_SECRET",
   "BIA_GROUPING_DELAY_MS",
@@ -88,6 +93,13 @@ export const INTEGRATION_KEYS = [
   "WAHA_URL",
   "WAHA_SESSION",
   "WAHA_API_KEY",
+  "WAHA_WEBHOOK_HMAC_KEY",
+  // WhatsApp Business Cloud API
+  "META_WA_PHONE_NUMBER_ID",
+  "META_WA_ACCESS_TOKEN",
+  "META_WA_VERIFY_TOKEN",
+  "META_WA_APP_SECRET",
+  "META_WA_GRAPH_VERSION",
   // Verify token compartilhado legado (Meta)
   "META_VERIFY_TOKEN",
   // Sync de mensagens do MercadoPhone — kill switch ("true"/"false", default true)
@@ -97,6 +109,11 @@ export const INTEGRATION_KEYS = [
 // Chaves que sao secrets / tokens — UI deve mascarar.
 export const SECRET_KEYS = new Set([
   "BIA_SECRET",
+  "BIA_LLM_API_KEY",
+  "WAHA_WEBHOOK_HMAC_KEY",
+  "META_WA_ACCESS_TOKEN",
+  "META_WA_VERIFY_TOKEN",
+  "META_WA_APP_SECRET",
   "ANTHROPIC_API_KEY",
   "MERCADOPHONE_TOKEN",
   "MERCADOPHONE_JWT",

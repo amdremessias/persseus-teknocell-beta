@@ -1,6 +1,8 @@
 import path from 'path';
 import prisma from '../lib/prisma.js';
 import { getSetting, getSettingInt } from '../lib/settings-cache.js';
+import { sendToCustomer } from './outbound.js';
+import { callOpenAiCompatible } from './llm-gateway.js';
 
 const AUDIO_EXTS = new Set(['.opus', '.ogg', '.mp3', '.m4a', '.aac', '.wav', '.webm']);
 const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp']);
@@ -102,6 +104,12 @@ async function buildBiaPayload(lead, canal) {
 }
 
 async function callBiaWebhook(payload) {
+  const provider = String(getSetting('BIA_PROVIDER', 'webhook')).toLowerCase();
+  if (provider === 'openai-compatible') return callBiaGateway(payload);
+  if (provider !== 'webhook' && provider !== 'n8n') {
+    console.warn('[bia-dispatcher] provedor BIA desconhecido: ' + provider);
+    return;
+  }
   const url = getSetting('BIA_WEBHOOK_URL');
   if (!url) {
     console.warn('[bia-dispatcher] BIA_WEBHOOK_URL não configurado — dispatch ignorado');
@@ -127,5 +135,44 @@ async function callBiaWebhook(payload) {
     }
   } catch (err) {
     console.error('[bia-dispatcher] fetch erro:', err.message);
+  }
+}
+
+
+async function callBiaGateway(payload) {
+  const baseUrl = getSetting('BIA_LLM_BASE_URL');
+  if (!baseUrl) {
+    console.warn('[bia-dispatcher] BIA_LLM_BASE_URL não configurado');
+    return;
+  }
+  const defaultPrompt = 'Você é o agente de atendimento de uma loja de tecnologia. Responda em português, com clareza e poucas frases. Use apenas as informações da conversa e do contexto recebido. Não invente estoque, preços, prazos ou políticas; quando faltar informação, diga isso e ofereça atendimento humano.';
+  const systemPrompt = getSetting('BIA_LLM_SYSTEM_PROMPT', defaultPrompt);
+  const messages = [{ role: 'system', content: systemPrompt }];
+  if (payload.ads) messages.push({ role: 'system', content: 'Contexto do anúncio recebido: ' + JSON.stringify(payload.ads) });
+  const history = Array.isArray(payload.contexto) ? payload.contexto.slice(-20) : [];
+  const last = history[history.length - 1];
+  const prior = last && last.tipo === 'cliente' && last.texto === payload.mensagemCliente ? history.slice(0, -1) : history;
+  for (const item of prior) {
+    const content = String(item.texto || '').trim();
+    if (!content) continue;
+    messages.push({ role: item.tipo === 'cliente' ? 'user' : 'assistant', content });
+  }
+  const userMessage = String(payload.mensagemCliente || '').trim() || (payload.mediaType ? 'O cliente enviou uma mídia do tipo ' + payload.mediaType + '.' : '');
+  if (!userMessage) return;
+  messages.push({ role: 'user', content: userMessage });
+
+  try {
+    const response = await callOpenAiCompatible({
+      baseUrl,
+      apiKey: getSetting('BIA_LLM_API_KEY', ''),
+      model: getSetting('BIA_LLM_MODEL', 'default'),
+      timeoutMs: getSettingInt('BIA_LLM_TIMEOUT_MS', 30000),
+      messages,
+    });
+    const result = await sendToCustomer(payload.leadId, response);
+    if (!result?.delivery?.success) console.error('[bia-dispatcher] gateway respondeu mas envio falhou lead ' + payload.leadId);
+    else console.log('[bia-dispatcher] resposta via gateway enviada lead ' + payload.leadId);
+  } catch (err) {
+    console.error('[bia-dispatcher] gateway falhou lead ' + payload.leadId + ': ' + err.message);
   }
 }

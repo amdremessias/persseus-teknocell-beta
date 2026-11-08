@@ -3,8 +3,47 @@ import prisma from '../lib/prisma.js';
 import { ingestMessage } from '../core/ingestion.js';
 import { sendToCustomer } from '../core/outbound.js';
 import { getSetting } from '../lib/settings-cache.js';
+import { createHmac, timingSafeEqual } from 'node:crypto';
+import { Readable } from 'node:stream';
+import { parseMetaCloudWebhook } from '../channels/whatsapp/meta-cloud-parser.js';
 
-// Best-effort — log warn, não bloqueia. TODO: enforce em prod capturando raw body via onRequest hook.
+
+
+async function captureRawBody(req, _reply, payload) {
+  const chunks = [];
+  for await (const chunk of payload) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  req.rawBody = Buffer.concat(chunks);
+  return Readable.from([req.rawBody]);
+}
+
+function verifyHmac(rawBody, header, secret, algorithm, prefix) {
+  if (!secret || !header || !rawBody) return false;
+  const match = String(header).match(prefix);
+  if (!match) return false;
+  const provided = Buffer.from(match[1], 'hex');
+  const expected = createHmac(algorithm, secret).update(rawBody).digest();
+  return provided.length === expected.length && timingSafeEqual(provided, expected);
+}
+
+function checkWahaSignature(req) {
+  const secret = getSetting('WAHA_WEBHOOK_HMAC_KEY') || getSetting('WAHA_API_KEY');
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') return false;
+    console.warn('[webhook:waha] HMAC não configurado; aceite somente em desenvolvimento');
+    return true;
+  }
+  const algorithm = String(req.headers['x-webhook-hmac-algorithm'] || '').toLowerCase();
+  if (algorithm !== 'sha512') return false;
+  return verifyHmac(req.rawBody, req.headers['x-webhook-hmac'], secret, 'sha512', /^([a-f0-9]{128})$/i);
+}
+
+function checkWhatsAppMetaSignature(req) {
+  const secret = getSetting('META_WA_APP_SECRET') || getSetting('META_APP_SECRET');
+  if (!secret) return null;
+  return verifyHmac(req.rawBody, req.headers['x-hub-signature-256'], secret, 'sha256', /^sha256=([a-f0-9]{64})$/i);
+}
+
+// Best-effort legado para Instagram/Messenger; WhatsApp Cloud usa validação estrita abaixo.
 function checkMetaSignature(req) {
   if (!process.env.META_APP_SECRET) return;
   const header = req.headers['x-hub-signature-256'];
@@ -48,12 +87,39 @@ export default async function webhookRoutes(fastify) {
       .catch(err => console.error('[webhook:whatsapp]', err.message));
   });
 
-  // ── WAHA (WhatsApp HTTP API) ────────────────────────────────────────────
-  fastify.post('/api/webhooks/waha', async (req, reply) => {
-    reply.code(200).send({ ok: true }); // responde ANTES de processar
+  // ── WAHA (HMAC-SHA512 do corpo bruto, enviado pelo próprio WAHA) ─────────
+  fastify.post('/api/webhooks/waha', { preParsing: captureRawBody }, async (req, reply) => {
+    if (!checkWahaSignature(req)) return reply.code(401).send({ error: 'Invalid WAHA webhook signature' });
+    if (getSetting('WPP_PROVIDER', 'mercadophone') !== 'waha') return reply.code(200).send({ ok: true, ignored: 'provider_disabled' });
+    if (req.body?.event && req.body.event !== 'message') return reply.code(200).send({ ok: true, ignored: 'event_not_supported' });
+    if (req.body?.payload?.fromMe === true) return reply.code(200).send({ ok: true, ignored: 'outgoing_echo' });
+    reply.code(200).send({ ok: true });
+    ingestMessage('whatsapp', req.body).catch(err => console.error('[webhook:waha]', err.message));
+  });
 
-    ingestMessage('whatsapp', req.body)
-      .catch(err => console.error('[webhook:waha]', err.message));
+  // ── WhatsApp Business Cloud API (Meta) ───────────────────────────────────
+  fastify.get('/api/webhooks/whatsapp/meta', async (req, reply) => {
+    const expected = getSetting('META_WA_VERIFY_TOKEN') || getSetting('META_VERIFY_TOKEN');
+    const { 'hub.mode': mode, 'hub.verify_token': token, 'hub.challenge': challenge } = req.query || {};
+    if (mode === 'subscribe' && expected && token === expected && challenge) return reply.code(200).send(challenge);
+    return reply.code(403).send('Forbidden');
+  });
+
+  fastify.post('/api/webhooks/whatsapp/meta', { preParsing: captureRawBody }, async (req, reply) => {
+    const signatureValid = checkWhatsAppMetaSignature(req);
+    if (signatureValid === null) return reply.code(503).send({ error: 'META_WA_APP_SECRET is not configured' });
+    if (!signatureValid) return reply.code(401).send({ error: 'Invalid Meta webhook signature' });
+    if (getSetting('WPP_PROVIDER', 'mercadophone') !== 'meta') return reply.code(200).send({ ok: true, ignored: 'provider_disabled' });
+    const messages = parseMetaCloudWebhook(req.body);
+    reply.code(200).send({ ok: true, accepted: messages.length });
+    for (const message of messages) {
+      const normalized = {
+        acao: 'from_internal', fromMe: false, sender: message.from, name: message.name,
+        contact: { number: message.from, name: message.name },
+        mensagem: { wid: message.id, body: message.text },
+      };
+      ingestMessage('whatsapp', normalized).catch(err => console.error('[webhook:whatsapp:meta]', err.message));
+    }
   });
 
   // ── Instagram ────────────────────────────────────────────────────────────
